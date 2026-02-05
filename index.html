@@ -264,7 +264,8 @@ canvas#compChart{display:block;width:100%;height:100%}
       </div>
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" required autocomplete="current-password">
+        <input type="password" id="password" required autocomplete="current-password" minlength="8">
+        <small id="passwordHint" class="password-hint" style="display:none;font-size:11px;color:var(--text-dim);margin-top:4px;">Use at least 8 characters with letters and numbers</small>
       </div>
       <button type="submit" class="auth-btn" id="authSubmitBtn">Sign In</button>
     </form>
@@ -308,7 +309,7 @@ canvas#compChart{display:block;width:100%;height:100%}
     <div class="setting-item">
       <label>Total Corn Acres</label>
       <div class="setting-input">
-        <input type="number" id="acreageInput" value="100" min="1" step="1" inputmode="numeric" oninput="updateAll()">
+        <input type="number" id="acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="updateAll()">
         <span class="unit">ac</span>
       </div>
     </div>
@@ -368,7 +369,7 @@ canvas#compChart{display:block;width:100%;height:100%}
       <div class="dry-item">
         <label>Cost / Point</label>
         <div class="dry-iw">
-          <input type="number" id="dryRate" value="13.51" min="0" step="0.01" inputmode="decimal" oninput="calcDrying()">
+          <input type="number" id="dryRate" value="13.51" min="0" max="100" step="0.01" inputmode="decimal" oninput="calcDrying()">
           <span class="unit">$/ac</span>
         </div>
       </div>
@@ -422,14 +423,14 @@ canvas#compChart{display:block;width:100%;height:100%}
       <div class="be-row">
         <label>Corn Price</label>
         <div class="be-iw"><span class="sym">$</span>
-          <input type="number" id="priceInput" value="6.06" step="0.01" inputmode="decimal" oninput="updateAll()">
+          <input type="number" id="priceInput" value="6.06" min="0" max="50" step="0.01" inputmode="decimal" oninput="updateAll()">
           <span class="unit">$/bu</span>
         </div>
       </div>
       <div class="be-row">
         <label>Your Yield</label>
         <div class="be-iw">
-          <input type="number" id="yieldInput" value="185" step="1" inputmode="numeric" oninput="updateAll()">
+          <input type="number" id="yieldInput" value="185" min="0" max="500" step="1" inputmode="numeric" oninput="updateAll()">
           <span class="unit">bu/ac</span>
         </div>
       </div>
@@ -513,18 +514,21 @@ var saveTimeout = null;
 // ═══ AUTH UI ═══
 function toggleAuthMode() {
   isSignUpMode = !isSignUpMode;
-  const btn = document.getElementById('authSubmitBtn');
-  const toggle = document.getElementById('authToggleText');
-  const link = document.getElementById('authToggleLink');
-  
+  var btn = document.getElementById('authSubmitBtn');
+  var toggle = document.getElementById('authToggleText');
+  var link = document.getElementById('authToggleLink');
+  var passwordHint = document.getElementById('passwordHint');
+
   if (isSignUpMode) {
     btn.textContent = 'Create Account';
     toggle.textContent = 'Already have an account?';
     link.textContent = 'Sign in';
+    passwordHint.style.display = 'block';
   } else {
     btn.textContent = 'Sign In';
     toggle.textContent = "Don't have an account?";
     link.textContent = 'Create one';
+    passwordHint.style.display = 'none';
   }
 }
 
@@ -579,7 +583,7 @@ function getAuthErrorMessage(error) {
     case 'auth/wrong-password':
       return 'Incorrect password.';
     case 'auth/weak-password':
-      return 'Password should be at least 6 characters.';
+      return 'Password should be at least 8 characters with a mix of letters and numbers.';
     case 'auth/invalid-email':
       return 'Invalid username format.';
     default:
@@ -614,98 +618,258 @@ auth.onAuthStateChanged(function(user) {
 });
 
 // ═══ DATA PERSISTENCE ═══
+var saveRetryCount = 0;
+var maxSaveRetries = 3;
+
+function getSaveData() {
+  return {
+    acreage: parseFloat(document.getElementById('acreageInput').value) || 100,
+    mode: mode,
+    cornOnCorn: document.getElementById('cornOnCorn').checked,
+    farmVals: farmVals,
+    farmOH: farmOH,
+    harvestMoist: parseFloat(document.getElementById('harvestMoist').value) || 25,
+    targetMoist: parseFloat(document.getElementById('targetMoist').value) || 17,
+    dryRate: parseFloat(document.getElementById('dryRate').value) || 13.51,
+    price: parseFloat(document.getElementById('priceInput').value) || 6.06,
+    yield: parseFloat(document.getElementById('yieldInput').value) || 185,
+    lastUpdated: Date.now()
+  };
+}
+
+function showSaveStatus(type, message) {
+  var existing = document.getElementById('saveStatus');
+  if (existing) existing.remove();
+
+  if (type === 'hidden') return;
+
+  var status = document.createElement('div');
+  status.id = 'saveStatus';
+  status.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:6px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:8px;';
+
+  if (type === 'saving') {
+    status.style.background = 'var(--omafa-dim)';
+    status.style.border = '1px solid var(--omafa)';
+    status.style.color = 'var(--omafa)';
+    status.textContent = '⏳ Saving...';
+  } else if (type === 'success') {
+    status.style.background = 'var(--green-dim)';
+    status.style.border = '1px solid var(--green)';
+    status.style.color = 'var(--green)';
+    status.textContent = '✓ Saved';
+    setTimeout(function() { status.remove(); }, 2000);
+  } else if (type === 'error') {
+    status.style.background = 'var(--red-dim)';
+    status.style.border = '1px solid var(--red)';
+    status.style.color = 'var(--red)';
+    status.innerHTML = '';
+    status.appendChild(document.createTextNode('⚠ ' + message + ' '));
+    var retryBtn = document.createElement('button');
+    retryBtn.textContent = 'Retry';
+    retryBtn.style.cssText = 'margin-left:8px;padding:2px 8px;border:1px solid var(--red);background:none;color:var(--red);border-radius:3px;font-size:11px;cursor:pointer;';
+    retryBtn.onclick = function() { saveRetryCount = 0; saveUserData(); };
+    status.appendChild(retryBtn);
+  }
+
+  document.body.appendChild(status);
+}
+
+function saveToLocalBackup(data) {
+  try {
+    localStorage.setItem('cornCalcBackup_' + currentUser.uid, JSON.stringify(data));
+  } catch (e) {
+    console.warn('localStorage backup failed:', e);
+  }
+}
+
 function saveUserData() {
   if (!currentUser) return;
   clearTimeout(saveTimeout);
-  
+
   saveTimeout = setTimeout(function() {
-    const data = {
-      acreage: parseFloat(document.getElementById('acreageInput').value) || 100,
-      mode: mode,
-      cornOnCorn: document.getElementById('cornOnCorn').checked,
-      farmVals: farmVals,
-      farmOH: farmOH,
-      harvestMoist: parseFloat(document.getElementById('harvestMoist').value) || 25,
-      targetMoist: parseFloat(document.getElementById('targetMoist').value) || 17,
-      dryRate: parseFloat(document.getElementById('dryRate').value) || 13.51,
-      price: parseFloat(document.getElementById('priceInput').value) || 6.06,
-      yield: parseFloat(document.getElementById('yieldInput').value) || 185,
-      lastUpdated: Date.now()
-    };
-    
-    db.ref('users/' + currentUser.uid).set(data).catch(function(error) {
+    var data = getSaveData();
+
+    // Always save to localStorage as backup
+    saveToLocalBackup(data);
+
+    showSaveStatus('saving');
+
+    db.ref('users/' + currentUser.uid).set(data).then(function() {
+      saveRetryCount = 0;
+      showSaveStatus('success');
+    }).catch(function(error) {
       console.error('Save error:', error);
+      saveRetryCount++;
+
+      if (saveRetryCount < maxSaveRetries) {
+        // Retry with exponential backoff
+        var delay = Math.pow(2, saveRetryCount) * 1000;
+        console.log('Retrying save in ' + delay + 'ms (attempt ' + (saveRetryCount + 1) + ')');
+        setTimeout(function() {
+          db.ref('users/' + currentUser.uid).set(data).then(function() {
+            saveRetryCount = 0;
+            showSaveStatus('success');
+          }).catch(function(err) {
+            saveRetryCount++;
+            if (saveRetryCount >= maxSaveRetries) {
+              showSaveStatus('error', 'Save failed. Data backed up locally.');
+            }
+          });
+        }, delay);
+      } else {
+        showSaveStatus('error', 'Save failed. Data backed up locally.');
+      }
     });
   }, 1000);
 }
 
+function loadFromLocalBackup() {
+  try {
+    var backup = localStorage.getItem('cornCalcBackup_' + currentUser.uid);
+    if (backup) {
+      return JSON.parse(backup);
+    }
+  } catch (e) {
+    console.warn('localStorage restore failed:', e);
+  }
+  return null;
+}
+
+function applyLoadedData(data) {
+  if (!data) return false;
+
+  document.getElementById('acreageInput').value = data.acreage || 100;
+  mode = data.mode || 'conv';
+  document.getElementById('cornOnCorn').checked = data.cornOnCorn || false;
+
+  // Schema validation: ensure arrays have expected length
+  if (data.farmVals && Array.isArray(data.farmVals) && data.farmVals.length === CATS.length) {
+    // Validate each value is a valid number
+    var validVals = data.farmVals.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+    if (validVals) farmVals = data.farmVals;
+  }
+  if (data.farmOH && Array.isArray(data.farmOH) && data.farmOH.length === OH.length) {
+    var validOH = data.farmOH.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+    if (validOH) farmOH = data.farmOH;
+  }
+
+  document.getElementById('harvestMoist').value = data.harvestMoist || 25;
+  document.getElementById('targetMoist').value = data.targetMoist || 17;
+  document.getElementById('dryRate').value = data.dryRate || 13.51;
+  document.getElementById('priceInput').value = data.price || 6.06;
+  document.getElementById('yieldInput').value = data.yield || 185;
+
+  return true;
+}
+
 function loadUserData() {
   if (!currentUser) return;
-  
+
   db.ref('users/' + currentUser.uid).once('value').then(function(snapshot) {
-    const data = snapshot.val();
+    var data = snapshot.val();
     if (!data) {
+      // Try localStorage backup
+      var backup = loadFromLocalBackup();
+      if (backup) {
+        applyLoadedData(backup);
+        showSaveStatus('error', 'Loaded from local backup');
+      }
       init();
       return;
     }
-    
-    document.getElementById('acreageInput').value = data.acreage || 100;
-    mode = data.mode || 'conv';
-    document.getElementById('cornOnCorn').checked = data.cornOnCorn || false;
-    
-    if (data.farmVals && data.farmVals.length === CATS.length) {
-      farmVals = data.farmVals;
-    }
-    if (data.farmOH && data.farmOH.length === OH.length) {
-      farmOH = data.farmOH;
-    }
-    
-    document.getElementById('harvestMoist').value = data.harvestMoist || 25;
-    document.getElementById('targetMoist').value = data.targetMoist || 17;
-    document.getElementById('dryRate').value = data.dryRate || 13.51;
-    document.getElementById('priceInput').value = data.price || 6.06;
-    document.getElementById('yieldInput').value = data.yield || 185;
-    
+
+    applyLoadedData(data);
     setTillage(mode);
     init();
   }).catch(function(error) {
     console.error('Load error:', error);
+    // Try localStorage backup on failure
+    var backup = loadFromLocalBackup();
+    if (backup) {
+      applyLoadedData(backup);
+      showSaveStatus('error', 'Offline mode - loaded from local backup');
+    }
     init();
   });
 }
 
 // ═══ PRICE FETCHING ═══
-async function fetchCornPrice() {
-  const banner = document.getElementById('priceBanner');
+var PRICE_CACHE_KEY = 'cornCalcPriceCache';
+var PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+function getCachedPrice() {
+  try {
+    var cached = localStorage.getItem(PRICE_CACHE_KEY);
+    if (cached) {
+      var data = JSON.parse(cached);
+      var age = Date.now() - data.timestamp;
+      if (age < PRICE_CACHE_DURATION) {
+        return data;
+      }
+    }
+  } catch (e) {
+    console.warn('Price cache read failed:', e);
+  }
+  return null;
+}
+
+function setCachedPrice(price, month) {
+  try {
+    localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({
+      price: price,
+      month: month,
+      timestamp: Date.now()
+    }));
+  } catch (e) {
+    console.warn('Price cache write failed:', e);
+  }
+}
+
+async function fetchCornPrice(forceRefresh) {
+  var banner = document.getElementById('priceBanner');
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    var cached = getCachedPrice();
+    if (cached) {
+      var ageMinutes = Math.round((Date.now() - cached.timestamp) / 60000);
+      showPriceSuccess(banner, cached.price, cached.month, ageMinutes);
+      document.getElementById('priceInput').value = cached.price;
+      updateAll();
+      return;
+    }
+  }
+
   banner.className = 'price-banner loading';
-  banner.innerHTML = '<div class="pb-icon">⏳</div><div class="pb-text">Fetching latest corn prices from GFO... <button onclick="fetchCornPrice()" style="margin-left:8px;padding:2px 8px;border:1px solid var(--omafa);background:none;color:var(--omafa);border-radius:3px;font-size:11px;cursor:pointer;">Retry</button></div>';
+  setPriceBannerLoading(banner);
   
   // Try multiple CORS proxies in order
-  const proxies = [
+  var proxies = [
     'https://corsproxy.io/?',
     'https://api.codetabs.com/v1/proxy?quest=',
     'https://api.allorigins.win/raw?url='
   ];
-  
-  const targetUrl = 'https://gfo.ca/average-commodity-prices/';
-  
-  for (let i = 0; i < proxies.length; i++) {
+
+  var targetUrl = 'https://gfo.ca/average-commodity-prices/';
+
+  for (var i = 0; i < proxies.length; i++) {
     try {
-      const proxyUrl = proxies[i] + encodeURIComponent(targetUrl);
-      const response = await fetch(proxyUrl, { 
+      var proxyUrl = proxies[i] + encodeURIComponent(targetUrl);
+      var response = await fetch(proxyUrl, {
         method: 'GET',
         headers: { 'Accept': 'text/html' }
       });
-      
+
       if (!response.ok) throw new Error('HTTP ' + response.status);
-      
-      const html = await response.text();
-      const result = parseCornPrice(html);
-      
+
+      var html = await response.text();
+      var result = parseCornPrice(html);
+
       if (result.success) {
-        banner.className = 'price-banner';
-        banner.innerHTML = '<div class="pb-icon">✓</div><div class="pb-text">Price updated: <strong>$' + result.price + '/bu</strong> (' + result.month + ' GFO average) <button onclick="fetchCornPrice()" style="margin-left:8px;padding:2px 8px;border:1px solid var(--green);background:none;color:var(--green);border-radius:3px;font-size:11px;cursor:pointer;">Refresh</button></div>';
-        
+        // Cache the successful price
+        setCachedPrice(result.price, result.month);
+        showPriceSuccess(banner, result.price, result.month, 0);
+
         // Update the price input
         document.getElementById('priceInput').value = result.price;
         updateAll();
@@ -717,9 +881,64 @@ async function fetchCornPrice() {
       continue;
     }
   }
-  
+
   // All proxies failed
   showPriceError();
+}
+
+function setPriceBannerLoading(banner) {
+  banner.innerHTML = '';
+  var icon = document.createElement('div');
+  icon.className = 'pb-icon';
+  icon.textContent = '⏳';
+
+  var text = document.createElement('div');
+  text.className = 'pb-text';
+  text.textContent = 'Fetching latest corn prices from GFO... ';
+
+  var retryBtn = document.createElement('button');
+  retryBtn.textContent = 'Retry';
+  retryBtn.style.cssText = 'margin-left:8px;padding:2px 8px;border:1px solid var(--omafa);background:none;color:var(--omafa);border-radius:3px;font-size:11px;cursor:pointer;';
+  retryBtn.onclick = function() { fetchCornPrice(true); };
+  text.appendChild(retryBtn);
+
+  banner.appendChild(icon);
+  banner.appendChild(text);
+}
+
+function showPriceSuccess(banner, price, month, ageMinutes) {
+  banner.className = 'price-banner';
+  banner.innerHTML = '';
+
+  var icon = document.createElement('div');
+  icon.className = 'pb-icon';
+  icon.textContent = '✓';
+
+  var text = document.createElement('div');
+  text.className = 'pb-text';
+
+  var priceText = 'Price: ';
+  text.appendChild(document.createTextNode(priceText));
+
+  var strong = document.createElement('strong');
+  strong.textContent = '$' + price + '/bu';
+  text.appendChild(strong);
+
+  var sourceText = ' (' + month + ' GFO average';
+  if (ageMinutes > 0) {
+    sourceText += ', cached ' + ageMinutes + 'm ago';
+  }
+  sourceText += ') ';
+  text.appendChild(document.createTextNode(sourceText));
+
+  var refreshBtn = document.createElement('button');
+  refreshBtn.textContent = 'Refresh';
+  refreshBtn.style.cssText = 'margin-left:8px;padding:2px 8px;border:1px solid var(--green);background:none;color:var(--green);border-radius:3px;font-size:11px;cursor:pointer;';
+  refreshBtn.onclick = function() { fetchCornPrice(true); };
+  text.appendChild(refreshBtn);
+
+  banner.appendChild(icon);
+  banner.appendChild(text);
 }
 
 function parseCornPrice(html) {
@@ -783,11 +1002,28 @@ function parseCornPrice(html) {
 }
 
 function showPriceError() {
-  const banner = document.getElementById('priceBanner');
+  var banner = document.getElementById('priceBanner');
   banner.className = 'price-banner error';
-  banner.innerHTML = '<div class="pb-icon">⚠</div><div class="pb-text">Could not fetch GFO prices. Using current value ($' + 
-    (parseFloat(document.getElementById('priceInput').value) || 6.06).toFixed(2) + 
-    '/bu). <button onclick="fetchCornPrice()" style="margin-left:8px;padding:2px 8px;border:1px solid var(--red);background:none;color:var(--red);border-radius:3px;font-size:11px;cursor:pointer;">Retry</button></div>';
+  banner.innerHTML = '';
+
+  var icon = document.createElement('div');
+  icon.className = 'pb-icon';
+  icon.textContent = '⚠';
+
+  var text = document.createElement('div');
+  text.className = 'pb-text';
+
+  var currentPrice = (parseFloat(document.getElementById('priceInput').value) || 6.06).toFixed(2);
+  text.appendChild(document.createTextNode('Could not fetch GFO prices. Using current value ($' + currentPrice + '/bu). '));
+
+  var retryBtn = document.createElement('button');
+  retryBtn.textContent = 'Retry';
+  retryBtn.style.cssText = 'margin-left:8px;padding:2px 8px;border:1px solid var(--red);background:none;color:var(--red);border-radius:3px;font-size:11px;cursor:pointer;';
+  retryBtn.onclick = function() { fetchCornPrice(true); };
+  text.appendChild(retryBtn);
+
+  banner.appendChild(icon);
+  banner.appendChild(text);
 }
 
 // ═══ CALCULATOR LOGIC (same as original) ═══
@@ -818,7 +1054,7 @@ function buildTable(){
     tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
       '<td class="val-omafa" id="om_'+i+'">$'+f2(omafa(i))+'</td>'+
       '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span>'+
-        '<input type="number" id="f_'+i+'" value="'+f2(farmVals[i])+'" step="0.01" inputmode="decimal" oninput="upFarm('+i+',this.value)">'+
+        '<input type="number" id="f_'+i+'" value="'+f2(farmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="upFarm('+i+',this.value)">'+
       '</div></td>'+
       '<td class="diff-cell" id="d_'+i+'"></td>';
     tb.appendChild(tr);
@@ -833,7 +1069,7 @@ function buildCards(){
       '<div class="m-card-row">'+
         '<div class="m-col omafa-col"><div class="m-col-label">OMAFA</div><div class="m-omafa-val" id="mom_'+i+'">$'+f2(omafa(i))+'</div></div>'+
         '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span>'+
-          '<input type="number" id="mf_'+i+'" value="'+f2(farmVals[i])+'" step="0.01" inputmode="decimal" oninput="upFarm('+i+',this.value)">'+
+          '<input type="number" id="mf_'+i+'" value="'+f2(farmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="upFarm('+i+',this.value)">'+
         '</div></div></div>';
     el.appendChild(card);
   }
@@ -845,7 +1081,7 @@ function buildOH(){
     var item=document.createElement('div');item.className='oh-item';
     item.innerHTML='<div class="oh-label">'+OH[i].label+'</div>'+
       '<div class="oh-iw"><span class="sym">$</span>'+
-        '<input type="number" id="oh_'+i+'" value="'+f2(farmOH[i])+'" step="0.01" inputmode="decimal" oninput="upOH('+i+',this.value)">'+
+        '<input type="number" id="oh_'+i+'" value="'+f2(farmOH[i])+'" min="0" max="500" step="0.01" inputmode="decimal" oninput="upOH('+i+',this.value)">'+
       '</div>';
     g.appendChild(item);
   }
