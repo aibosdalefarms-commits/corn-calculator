@@ -1,0 +1,32 @@
+{
+  "name": "corn-calculator-pwa",
+  "version": "1.0.0",
+  "description": "PWA for comparing farm corn costs against OMAFA benchmarks",
+  "main": "index.html",
+  "scripts": {
+    "create-icons": "node create-icons.js",
+    "serve": "http-server -p 8080 -c-1",
+    "deploy": "firebase deploy --only hosting",
+    "deploy-netlify": "netlify deploy --prod",
+    "deploy-vercel": "vercel --prod"
+  },
+  "keywords": [
+    "pwa",
+    "agriculture",
+    "corn",
+    "calculator",
+    "farming",
+    "ontario"
+  ],
+  "author": "Bosdale Farm Operations",
+  "license": "MIT",
+  "devDependencies": {
+    "canvas": "^2.11.2",
+    "http-server": "^14.1.1"
+  },
+  "optionalDependencies": {
+    "firebase-tools": "^13.0.0",
+    "netlify-cli": "^17.0.0",
+    "vercel": "^33.0.0"
+  }
+}
