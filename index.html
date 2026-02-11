@@ -435,7 +435,7 @@ canvas#compChart{display:block;width:100%;height:100%}
   <div class="gfo-price-box" id="gfoPriceBox">
     <div class="gfo-price-info">
       <div>
-        <div class="gfo-price-label">Current Corn Price (CAD)</div>
+        <div class="gfo-price-label">Current GFO Price</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="gfo-price-value" id="gfoPriceValue">—</span>
           <button class="gfo-use-btn" id="gfoUseBtn" onclick="useFetchedPrice()" style="display:none;">Use this price</button>
@@ -821,7 +821,6 @@ function loadUserData() {
 }
 
 // ═══ PRICE FETCHING ═══
-var ALPHA_VANTAGE_API_KEY = 'HY7MHPR94H9JZ95Z'; // Get your free key at https://www.alphavantage.co/support/#api-key
 var PRICE_CACHE_KEY = 'cornCalcPriceCache';
 var PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
@@ -841,12 +840,11 @@ function getCachedPrice() {
   return null;
 }
 
-function setCachedPrice(price, month, source) {
+function setCachedPrice(price, month) {
   try {
     localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify({
       price: price,
       month: month,
-      source: source || 'GFO',
       timestamp: Date.now()
     }));
   } catch (e) {
@@ -854,28 +852,25 @@ function setCachedPrice(price, month, source) {
   }
 }
 
-async function fetchUsdToCadRate() {
-  // Try fetching the USD to CAD exchange rate from free APIs
-  var urls = [
-    'https://open.er-api.com/v6/latest/USD',
-    'https://api.exchangerate-api.com/v4/latest/USD'
-  ];
-  for (var i = 0; i < urls.length; i++) {
-    try {
-      var resp = await fetch(urls[i]);
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      var data = await resp.json();
-      var rate = data.rates && data.rates.CAD;
-      if (rate && rate > 0) return rate;
-    } catch (e) {
-      console.log('Exchange rate source ' + i + ' failed:', e);
+async function fetchCornPrice(forceRefresh) {
+  var banner = document.getElementById('priceBanner');
+
+  // Check cache first (unless force refresh)
+  if (!forceRefresh) {
+    var cached = getCachedPrice();
+    if (cached) {
+      var ageMinutes = Math.round((Date.now() - cached.timestamp) / 60000);
+      showPriceSuccess(banner, cached.price, cached.month, ageMinutes);
+      document.getElementById('priceInput').value = cached.price;
+      updateAll();
+      return;
     }
   }
-  return null;
-}
 
-async function fetchFromGfo() {
-  // GFO historical corn prices - already in CAD/tonne
+  banner.className = 'price-banner loading';
+  setPriceBannerLoading(banner);
+
+  // Fetch Ontario cash bid prices from GFO via CORS proxies
   var gfoUrl = 'https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/';
   var proxies = [
     'https://corsproxy.io/?',
@@ -891,80 +886,20 @@ async function fetchFromGfo() {
       if (!response.ok) throw new Error('HTTP ' + response.status);
       var html = await response.text();
       var result = parseGfoCornPrice(html);
-      if (result.success) return result;
+      if (result.success) {
+        setCachedPrice(result.price, result.month);
+        showPriceSuccess(banner, result.price, result.month, 0);
+        document.getElementById('priceInput').value = result.price;
+        updateAll();
+        return;
+      }
     } catch (e) {
       console.log('GFO proxy ' + i + ' failed:', e);
     }
   }
-  return { success: false };
-}
 
-async function fetchFromAlphaVantage() {
-  // Alpha Vantage CORN endpoint - returns USD/tonne, needs CAD conversion
-  var targetUrl = 'https://www.alphavantage.co/query?function=CORN&interval=monthly&apikey=' + ALPHA_VANTAGE_API_KEY;
-  var urls = [
-    targetUrl,
-    'https://corsproxy.io/?' + encodeURIComponent(targetUrl),
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl)
-  ];
-
-  for (var i = 0; i < urls.length; i++) {
-    try {
-      var response = await fetch(urls[i], {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' }
-      });
-      if (!response.ok) throw new Error('HTTP ' + response.status);
-      var json = await response.json();
-      var result = parseAlphaVantageCornPrice(json);
-      if (result.success) {
-        // Convert USD to CAD
-        var cadRate = await fetchUsdToCadRate();
-        if (cadRate) {
-          result.price = (parseFloat(result.price) * cadRate).toFixed(2);
-        }
-        return result;
-      }
-    } catch (e) {
-      console.log('Alpha Vantage attempt ' + i + ' failed:', e);
-    }
-  }
-  return { success: false };
-}
-
-async function fetchCornPrice(forceRefresh) {
-  var banner = document.getElementById('priceBanner');
-
-  // Check cache first (unless force refresh)
-  if (!forceRefresh) {
-    var cached = getCachedPrice();
-    if (cached) {
-      var ageMinutes = Math.round((Date.now() - cached.timestamp) / 60000);
-      showPriceSuccess(banner, cached.price, cached.month, cached.source, ageMinutes);
-      document.getElementById('priceInput').value = cached.price;
-      updateAll();
-      return;
-    }
-  }
-
-  banner.className = 'price-banner loading';
-  setPriceBannerLoading(banner);
-
-  // Try GFO first (Ontario local prices in CAD), then Alpha Vantage as fallback
-  var result = await fetchFromGfo();
-
-  if (!result.success && ALPHA_VANTAGE_API_KEY) {
-    result = await fetchFromAlphaVantage();
-  }
-
-  if (result.success) {
-    setCachedPrice(result.price, result.month, result.source);
-    showPriceSuccess(banner, result.price, result.month, result.source, 0);
-    document.getElementById('priceInput').value = result.price;
-    updateAll();
-  } else {
-    showPriceError();
-  }
+  // All attempts failed
+  showPriceError();
 }
 
 function setPriceBannerLoading(banner) {
@@ -993,7 +928,7 @@ function setPriceBannerLoading(banner) {
 // Store current fetched price for "Use this price" button
 var currentFetchedPrice = null;
 
-function showPriceSuccess(banner, price, month, source, ageMinutes) {
+function showPriceSuccess(banner, price, month, ageMinutes) {
   banner.className = 'price-banner';
   banner.innerHTML = '';
 
@@ -1010,8 +945,7 @@ function showPriceSuccess(banner, price, month, source, ageMinutes) {
   strong.textContent = '$' + price + '/bu';
   text.appendChild(strong);
 
-  var sourceLabel = source === 'GFO' ? (month + ' GFO avg, CAD') : (month + ' CBOT avg, CAD');
-  var sourceText = ' (' + sourceLabel;
+  var sourceText = ' (' + month + ' GFO average';
   if (ageMinutes > 0) {
     sourceText += ', cached ' + ageMinutes + 'm ago';
   }
@@ -1028,10 +962,10 @@ function showPriceSuccess(banner, price, month, source, ageMinutes) {
   banner.appendChild(text);
 
   // Update the price box in breakeven section
-  updatePriceBox(price, month, source, ageMinutes);
+  updatePriceBox(price, month, ageMinutes);
 }
 
-function updatePriceBox(price, month, source, ageMinutes) {
+function updatePriceBox(price, month, ageMinutes) {
   currentFetchedPrice = price;
 
   var priceValue = document.getElementById('gfoPriceValue');
@@ -1044,11 +978,11 @@ function updatePriceBox(price, month, source, ageMinutes) {
   }
 
   if (priceSource) {
-    var sourceLabel = source === 'GFO' ? (month + ' avg from gfo.ca') : (month + ' CBOT avg via Alpha Vantage');
+    var sourceText = month + ' average from gfo.ca';
     if (ageMinutes > 0) {
-      sourceLabel += ' (cached ' + ageMinutes + 'm ago)';
+      sourceText += ' (cached ' + ageMinutes + 'm ago)';
     }
-    priceSource.textContent = sourceLabel;
+    priceSource.textContent = sourceText;
   }
 
   // Show "Use this price" button if current input differs from fetched price
@@ -1155,52 +1089,6 @@ function parseGfoCornPrice(html) {
   }
 }
 
-function parseAlphaVantageCornPrice(json) {
-  try {
-    if (json['Error Message'] || json['Note']) {
-      throw new Error(json['Error Message'] || json['Note']);
-    }
-
-    var data = json.data;
-    if (!data || !data.length) {
-      throw new Error('No corn price data returned');
-    }
-
-    // Find the most recent entry with a valid numeric value (skip entries with ".")
-    var latest = null;
-    for (var i = 0; i < data.length; i++) {
-      if (data[i].value && data[i].value !== '.' && !isNaN(parseFloat(data[i].value))) {
-        latest = data[i];
-        break;
-      }
-    }
-
-    if (!latest) throw new Error('No valid price entries found');
-
-    var pricePerTonne = parseFloat(latest.value);
-    if (isNaN(pricePerTonne) || pricePerTonne <= 0) {
-      throw new Error('Invalid price value: ' + latest.value);
-    }
-
-    // Convert USD/metric ton to USD/bushel (1 metric tonne ≈ 39.3679 bushels)
-    var pricePerBushel = (pricePerTonne / 39.3679).toFixed(2);
-
-    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    var parts = latest.date.split('-');
-    var month = monthNames[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
-
-    return {
-      success: true,
-      price: pricePerBushel,
-      month: month,
-      source: 'CBOT'
-    };
-  } catch (error) {
-    console.error('Alpha Vantage parse error:', error);
-    return { success: false };
-  }
-}
-
 function showPriceError(customMsg) {
   var banner = document.getElementById('priceBanner');
   banner.className = 'price-banner error';
@@ -1229,7 +1117,7 @@ function showPriceError(customMsg) {
   banner.appendChild(icon);
   banner.appendChild(text);
 
-  // Update CBOT price box error state
+  // Update GFO price box error state
   updatePriceBoxError();
 }
 
