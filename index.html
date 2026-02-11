@@ -878,17 +878,16 @@ async function fetchCornPrice(forceRefresh) {
 
   var targetUrl = 'https://www.alphavantage.co/query?function=CORN&interval=monthly&apikey=' + ALPHA_VANTAGE_API_KEY;
 
-  // Try multiple CORS proxies in order
-  var proxies = [
-    'https://corsproxy.io/?',
-    'https://api.codetabs.com/v1/proxy?quest=',
-    'https://api.allorigins.win/raw?url='
+  // Try direct call first (Alpha Vantage supports CORS), then fall back to proxies
+  var urls = [
+    targetUrl,
+    'https://corsproxy.io/?' + encodeURIComponent(targetUrl),
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl)
   ];
 
-  for (var i = 0; i < proxies.length; i++) {
+  for (var i = 0; i < urls.length; i++) {
     try {
-      var proxyUrl = proxies[i] + encodeURIComponent(targetUrl);
-      var response = await fetch(proxyUrl, {
+      var response = await fetch(urls[i], {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
@@ -907,15 +906,16 @@ async function fetchCornPrice(forceRefresh) {
         document.getElementById('priceInput').value = result.price;
         updateAll();
         return; // Success, exit
+      } else {
+        throw new Error('Parse failed');
       }
     } catch (error) {
-      console.log('Proxy ' + i + ' failed:', error);
-      // Try next proxy
+      console.log('Fetch attempt ' + i + ' failed:', error);
       continue;
     }
   }
 
-  // All proxies failed
+  // All attempts failed
   showPriceError();
 }
 
