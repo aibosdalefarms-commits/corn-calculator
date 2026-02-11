@@ -1,4 +1,4 @@
-const CACHE_NAME = 'corn-calc-v7';
+const CACHE_NAME = 'corn-calc-v8';
 const urlsToCache = [
   '/',
   '/index.html',
