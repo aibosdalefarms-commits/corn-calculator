@@ -309,7 +309,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 <!-- Price Update Banner -->
 <div id="priceBanner" class="price-banner loading">
   <div class="pb-icon">⏳</div>
-  <div class="pb-text">Fetching latest corn prices from GFO...</div>
+  <div class="pb-text">Fetching latest corn price from Alpha Vantage...</div>
 </div>
 
 <div class="header">
@@ -435,12 +435,12 @@ canvas#compChart{display:block;width:100%;height:100%}
   <div class="gfo-price-box" id="gfoPriceBox">
     <div class="gfo-price-info">
       <div>
-        <div class="gfo-price-label">Current GFO Price</div>
+        <div class="gfo-price-label">Current CBOT Price (USD)</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="gfo-price-value" id="gfoPriceValue">—</span>
-          <button class="gfo-use-btn" id="gfoUseBtn" onclick="useGfoPrice()" style="display:none;">Use this price</button>
+          <button class="gfo-use-btn" id="gfoUseBtn" onclick="useCbotPrice()" style="display:none;">Use this price</button>
         </div>
-        <div class="gfo-price-source" id="gfoPriceSource">Loading from gfo.ca...</div>
+        <div class="gfo-price-source" id="gfoPriceSource">Loading from Alpha Vantage...</div>
       </div>
     </div>
     <button class="gfo-update-btn" id="gfoUpdateBtn" onclick="fetchCornPrice(true)">Update Price</button>
@@ -821,6 +821,7 @@ function loadUserData() {
 }
 
 // ═══ PRICE FETCHING ═══
+var ALPHA_VANTAGE_API_KEY = 'HY7MHPR94H9JZ95Z'; // Get your free key at https://www.alphavantage.co/support/#api-key
 var PRICE_CACHE_KEY = 'cornCalcPriceCache';
 var PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
 
@@ -855,6 +856,11 @@ function setCachedPrice(price, month) {
 async function fetchCornPrice(forceRefresh) {
   var banner = document.getElementById('priceBanner');
 
+  if (!ALPHA_VANTAGE_API_KEY) {
+    showPriceError('No API key set. Add your free Alpha Vantage key in the source code.');
+    return;
+  }
+
   // Check cache first (unless force refresh)
   if (!forceRefresh) {
     var cached = getCachedPrice();
@@ -869,7 +875,9 @@ async function fetchCornPrice(forceRefresh) {
 
   banner.className = 'price-banner loading';
   setPriceBannerLoading(banner);
-  
+
+  var targetUrl = 'https://www.alphavantage.co/query?function=CORN&interval=monthly&apikey=' + ALPHA_VANTAGE_API_KEY;
+
   // Try multiple CORS proxies in order
   var proxies = [
     'https://corsproxy.io/?',
@@ -877,20 +885,18 @@ async function fetchCornPrice(forceRefresh) {
     'https://api.allorigins.win/raw?url='
   ];
 
-  var targetUrl = 'https://gfo.ca/average-commodity-prices/';
-
   for (var i = 0; i < proxies.length; i++) {
     try {
       var proxyUrl = proxies[i] + encodeURIComponent(targetUrl);
       var response = await fetch(proxyUrl, {
         method: 'GET',
-        headers: { 'Accept': 'text/html' }
+        headers: { 'Accept': 'application/json' }
       });
 
       if (!response.ok) throw new Error('HTTP ' + response.status);
 
-      var html = await response.text();
-      var result = parseCornPrice(html);
+      var json = await response.json();
+      var result = parseCornPrice(json);
 
       if (result.success) {
         // Cache the successful price
@@ -921,7 +927,7 @@ function setPriceBannerLoading(banner) {
 
   var text = document.createElement('div');
   text.className = 'pb-text';
-  text.textContent = 'Fetching latest corn prices from GFO... ';
+  text.textContent = 'Fetching latest corn price from Alpha Vantage... ';
 
   var retryBtn = document.createElement('button');
   retryBtn.textContent = 'Retry';
@@ -932,12 +938,12 @@ function setPriceBannerLoading(banner) {
   banner.appendChild(icon);
   banner.appendChild(text);
 
-  // Update GFO price box loading state
-  updateGfoPriceBoxLoading();
+  // Update CBOT price box loading state
+  updateCbotPriceBoxLoading();
 }
 
-// Store current GFO price for "Use this price" button
-var currentGfoPrice = null;
+// Store current CBOT price for "Use this price" button
+var currentCbotPrice = null;
 
 function showPriceSuccess(banner, price, month, ageMinutes) {
   banner.className = 'price-banner';
@@ -957,7 +963,7 @@ function showPriceSuccess(banner, price, month, ageMinutes) {
   strong.textContent = '$' + price + '/bu';
   text.appendChild(strong);
 
-  var sourceText = ' (' + month + ' GFO average';
+  var sourceText = ' (' + month + ' CBOT avg, USD';
   if (ageMinutes > 0) {
     sourceText += ', cached ' + ageMinutes + 'm ago';
   }
@@ -973,12 +979,12 @@ function showPriceSuccess(banner, price, month, ageMinutes) {
   banner.appendChild(icon);
   banner.appendChild(text);
 
-  // Update the GFO price box in breakeven section
-  updateGfoPriceBox(price, month, ageMinutes);
+  // Update the CBOT price box in breakeven section
+  updateCbotPriceBox(price, month, ageMinutes);
 }
 
-function updateGfoPriceBox(price, month, ageMinutes) {
-  currentGfoPrice = price;
+function updateCbotPriceBox(price, month, ageMinutes) {
+  currentCbotPrice = price;
 
   var priceValue = document.getElementById('gfoPriceValue');
   var priceSource = document.getElementById('gfoPriceSource');
@@ -990,14 +996,14 @@ function updateGfoPriceBox(price, month, ageMinutes) {
   }
 
   if (priceSource) {
-    var sourceText = month + ' average from gfo.ca';
+    var sourceText = month + ' CBOT avg via Alpha Vantage (USD)';
     if (ageMinutes > 0) {
       sourceText += ' (cached ' + ageMinutes + 'm ago)';
     }
     priceSource.textContent = sourceText;
   }
 
-  // Show "Use this price" button if current input differs from GFO price
+  // Show "Use this price" button if current input differs from CBOT price
   if (useBtn) {
     var currentInput = parseFloat(document.getElementById('priceInput').value) || 0;
     if (Math.abs(currentInput - parseFloat(price)) > 0.01) {
@@ -1008,7 +1014,7 @@ function updateGfoPriceBox(price, month, ageMinutes) {
   }
 }
 
-function updateGfoPriceBoxLoading() {
+function updateCbotPriceBoxLoading() {
   var priceValue = document.getElementById('gfoPriceValue');
   var priceSource = document.getElementById('gfoPriceSource');
   var useBtn = document.getElementById('gfoUseBtn');
@@ -1018,14 +1024,14 @@ function updateGfoPriceBoxLoading() {
     priceValue.style.color = 'var(--omafa)';
   }
   if (priceSource) {
-    priceSource.textContent = 'Fetching from gfo.ca...';
+    priceSource.textContent = 'Fetching from Alpha Vantage...';
   }
   if (useBtn) {
     useBtn.style.display = 'none';
   }
 }
 
-function updateGfoPriceBoxError() {
+function updateCbotPriceBoxError() {
   var priceValue = document.getElementById('gfoPriceValue');
   var priceSource = document.getElementById('gfoPriceSource');
   var useBtn = document.getElementById('gfoUseBtn');
@@ -1042,9 +1048,9 @@ function updateGfoPriceBoxError() {
   }
 }
 
-function useGfoPrice() {
-  if (currentGfoPrice) {
-    document.getElementById('priceInput').value = currentGfoPrice;
+function useCbotPrice() {
+  if (currentCbotPrice) {
+    document.getElementById('priceInput').value = currentCbotPrice;
     updateAll();
 
     // Hide the "Use this price" button
@@ -1055,67 +1061,57 @@ function useGfoPrice() {
   }
 }
 
-function parseCornPrice(html) {
+function parseCornPrice(json) {
   try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    
-    // Look for heading containing "Corn"
-    const headings = doc.querySelectorAll('h2, h3');
-    let cornSection = null;
-    
-    for (let heading of headings) {
-      if (heading.textContent.trim() === 'Corn') {
-        cornSection = heading;
+    // Alpha Vantage returns: { name, interval, unit, data: [{date, value}, ...] }
+    if (json['Error Message'] || json['Note']) {
+      throw new Error(json['Error Message'] || json['Note']);
+    }
+
+    var data = json.data;
+    if (!data || !data.length) {
+      throw new Error('No corn price data returned');
+    }
+
+    // Find the most recent entry with a valid numeric value (skip entries with ".")
+    var latest = null;
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].value && data[i].value !== '.' && !isNaN(parseFloat(data[i].value))) {
+        latest = data[i];
         break;
       }
     }
-    
-    if (!cornSection) {
-      throw new Error('Corn section not found');
+
+    if (!latest) {
+      throw new Error('No valid price entries found');
     }
-    
-    // Get the next table after the Corn heading
-    let currentElement = cornSection.nextElementSibling;
-    while (currentElement) {
-      if (currentElement.tagName === 'TABLE') {
-        const rows = currentElement.querySelectorAll('tbody tr');
-        if (rows.length > 0) {
-          // Get the last row (most recent month)
-          const lastRow = rows[rows.length - 1];
-          const cells = lastRow.querySelectorAll('td');
-          
-          if (cells.length >= 3) {
-            const month = cells[0].textContent.trim();
-            const priceText = cells[2].textContent.trim().replace('$', '').replace(',', '');
-            const pricePerTonne = parseFloat(priceText);
-            
-            if (!isNaN(pricePerTonne) && pricePerTonne > 0) {
-              // Convert $/tonne to $/bushel (1 tonne corn = 39.37 bushels)
-              const pricePerBushel = (pricePerTonne / 39.37).toFixed(2);
-              
-              return {
-                success: true,
-                price: pricePerBushel,
-                month: month,
-                source: 'GFO'
-              };
-            }
-          }
-        }
-        break;
-      }
-      currentElement = currentElement.nextElementSibling;
+
+    var pricePerTonne = parseFloat(latest.value);
+    if (isNaN(pricePerTonne) || pricePerTonne <= 0) {
+      throw new Error('Invalid price value: ' + latest.value);
     }
-    
-    throw new Error('Could not parse corn price from table');
+
+    // Convert USD/metric ton to USD/bushel (1 metric ton of corn ≈ 39.3679 bushels)
+    var pricePerBushel = (pricePerTonne / 39.3679).toFixed(2);
+
+    // Format the month from the date string (e.g. "2025-01-01" -> "Jan 2025")
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var parts = latest.date.split('-');
+    var month = monthNames[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+
+    return {
+      success: true,
+      price: pricePerBushel,
+      month: month,
+      source: 'CBOT'
+    };
   } catch (error) {
     console.error('Parse error:', error);
     return { success: false };
   }
 }
 
-function showPriceError() {
+function showPriceError(customMsg) {
   var banner = document.getElementById('priceBanner');
   banner.className = 'price-banner error';
   banner.innerHTML = '';
@@ -1127,8 +1123,12 @@ function showPriceError() {
   var text = document.createElement('div');
   text.className = 'pb-text';
 
-  var currentPrice = (parseFloat(document.getElementById('priceInput').value) || 6.06).toFixed(2);
-  text.appendChild(document.createTextNode('Could not fetch GFO prices. Using current value ($' + currentPrice + '/bu). '));
+  if (customMsg) {
+    text.appendChild(document.createTextNode(customMsg + ' '));
+  } else {
+    var currentPrice = (parseFloat(document.getElementById('priceInput').value) || 6.06).toFixed(2);
+    text.appendChild(document.createTextNode('Could not fetch corn price. Using current value ($' + currentPrice + '/bu). '));
+  }
 
   var retryBtn = document.createElement('button');
   retryBtn.textContent = 'Retry';
@@ -1139,8 +1139,8 @@ function showPriceError() {
   banner.appendChild(icon);
   banner.appendChild(text);
 
-  // Update GFO price box error state
-  updateGfoPriceBoxError();
+  // Update CBOT price box error state
+  updateCbotPriceBoxError();
 }
 
 // ═══ CALCULATOR LOGIC (same as original) ═══
