@@ -870,31 +870,26 @@ async function fetchCornPrice(forceRefresh) {
   banner.className = 'price-banner loading';
   setPriceBannerLoading(banner);
 
-  // Fetch Ontario cash bid prices from GFO via CORS proxies
-  var gfoUrl = 'https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/';
-  var proxies = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url='
+  // Fetch GFO corn price from our GitHub-hosted JSON (updated daily by GitHub Actions)
+  var priceUrls = [
+    'corn-price.json',
+    'https://raw.githubusercontent.com/aibosdalefarms-commits/corn-calculator/main/corn-price.json'
   ];
 
-  for (var i = 0; i < proxies.length; i++) {
+  for (var i = 0; i < priceUrls.length; i++) {
     try {
-      var response = await fetch(proxies[i] + encodeURIComponent(gfoUrl), {
-        method: 'GET',
-        headers: { 'Accept': 'text/html' }
-      });
+      var response = await fetch(priceUrls[i], { cache: 'no-cache' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
-      var html = await response.text();
-      var result = parseGfoCornPrice(html);
-      if (result.success) {
-        setCachedPrice(result.price, result.month);
-        showPriceSuccess(banner, result.price, result.month, 0);
-        document.getElementById('priceInput').value = result.price;
+      var data = await response.json();
+      if (data.price && data.month) {
+        setCachedPrice(data.price, data.month);
+        showPriceSuccess(banner, data.price, data.month, 0);
+        document.getElementById('priceInput').value = data.price;
         updateAll();
         return;
       }
     } catch (e) {
-      console.log('GFO proxy ' + i + ' failed:', e);
+      console.log('Price fetch attempt ' + i + ' failed:', e);
     }
   }
 
@@ -1040,52 +1035,6 @@ function useFetchedPrice() {
     if (useBtn) {
       useBtn.style.display = 'none';
     }
-  }
-}
-
-function parseGfoCornPrice(html) {
-  try {
-    var parser = new DOMParser();
-    var doc = parser.parseFromString(html, 'text/html');
-
-    // Find all tables on the page
-    var tables = doc.querySelectorAll('table');
-    if (!tables.length) throw new Error('No tables found on GFO page');
-
-    // Use the first table - the historical corn prices page has the current crop year table first
-    // Table columns: Month | Total Tonnes Reported | Average Weighted Price (CAD/tonne)
-    var bestRow = null;
-    for (var t = 0; t < tables.length; t++) {
-      var rows = tables[t].querySelectorAll('tbody tr');
-      if (!rows.length) rows = tables[t].querySelectorAll('tr');
-      for (var r = rows.length - 1; r >= 0; r--) {
-        var cells = rows[r].querySelectorAll('td');
-        if (cells.length >= 3) {
-          var priceText = cells[2].textContent.trim().replace('$', '').replace(/,/g, '');
-          var price = parseFloat(priceText);
-          if (!isNaN(price) && price > 50 && price < 1000) {
-            bestRow = { month: cells[0].textContent.trim(), price: price };
-            break;
-          }
-        }
-      }
-      if (bestRow) break;
-    }
-
-    if (!bestRow) throw new Error('Could not find corn price in GFO tables');
-
-    // Convert CAD/tonne to CAD/bushel (1 metric tonne of corn ≈ 39.3679 bushels)
-    var pricePerBushel = (bestRow.price / 39.3679).toFixed(2);
-
-    return {
-      success: true,
-      price: pricePerBushel,
-      month: bestRow.month,
-      source: 'GFO'
-    };
-  } catch (error) {
-    console.error('GFO parse error:', error);
-    return { success: false };
   }
 }
 

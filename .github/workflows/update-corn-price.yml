@@ -1,0 +1,125 @@
+name: Update Corn Price from GFO
+
+on:
+  schedule:
+    # Run daily at 12:00 UTC (8:00 AM ET)
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  update-price:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch and parse GFO corn price
+        run: |
+          # Try multiple GFO URLs
+          URLS=(
+            "https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/"
+            "https://gfo.ca/average-commodity-prices/"
+            "https://gfo.ca/marketing/average-commodity-prices/"
+          )
+
+          HTML=""
+          for URL in "${URLS[@]}"; do
+            echo "Trying: $URL"
+            HTTP_CODE=$(curl -s -o /tmp/gfo.html -w "%{http_code}" \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+              -H "Accept: text/html" \
+              -L "$URL" 2>/dev/null)
+            if [ "$HTTP_CODE" = "200" ] && [ -s /tmp/gfo.html ]; then
+              HTML="/tmp/gfo.html"
+              echo "Success: $URL (HTTP $HTTP_CODE)"
+              break
+            else
+              echo "Failed: $URL (HTTP $HTTP_CODE)"
+            fi
+          done
+
+          if [ -z "$HTML" ]; then
+            echo "All GFO URLs failed"
+            exit 1
+          fi
+
+          # Parse the corn price from HTML using Node.js
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('$HTML', 'utf8');
+
+            // Find table rows with 3+ cells containing month name and price
+            const months = ['January','February','March','April','May','June',
+                           'July','August','September','October','November','December'];
+
+            // Extract all table cell content using regex
+            const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+            const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+
+            let bestMonth = null;
+            let bestPrice = null;
+            let bestMonthIndex = -1;
+            let match;
+
+            while ((match = rowRegex.exec(html)) !== null) {
+              const rowHtml = match[1];
+              const cells = [];
+              let cellMatch;
+              const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+              while ((cellMatch = cellRe.exec(rowHtml)) !== null) {
+                cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
+              }
+
+              if (cells.length >= 3) {
+                const monthText = cells[0];
+                const priceText = cells[2].replace(/[\$,]/g, '');
+                const price = parseFloat(priceText);
+
+                // Check if first cell is a month name and price is reasonable
+                const monthIdx = months.findIndex(m =>
+                  monthText.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))
+                );
+
+                if (monthIdx >= 0 && !isNaN(price) && price > 50 && price < 1000) {
+                  bestMonth = monthText;
+                  bestPrice = price;
+                }
+              }
+            }
+
+            if (!bestPrice) {
+              console.error('Could not find corn price in GFO page');
+              process.exit(1);
+            }
+
+            // Convert CAD/tonne to CAD/bushel
+            const pricePerBushel = (bestPrice / 39.3679).toFixed(2);
+
+            const data = {
+              price: pricePerBushel,
+              pricePerTonne: bestPrice.toFixed(2),
+              month: bestMonth,
+              currency: 'CAD',
+              source: 'Grain Farmers of Ontario',
+              sourceUrl: 'https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/',
+              updatedAt: new Date().toISOString()
+            };
+
+            // Only write if we got a valid price
+            fs.writeFileSync('corn-price.json', JSON.stringify(data, null, 2) + '\n');
+            console.log('Updated corn price:', JSON.stringify(data));
+          "
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add corn-price.json
+          if git diff --staged --quiet; then
+            echo "No price changes to commit"
+          else
+            git commit -m "Update GFO corn price [automated]"
+            git push
+          fi
