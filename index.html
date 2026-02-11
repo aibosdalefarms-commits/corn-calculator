@@ -435,7 +435,7 @@ canvas#compChart{display:block;width:100%;height:100%}
   <div class="gfo-price-box" id="gfoPriceBox">
     <div class="gfo-price-info">
       <div>
-        <div class="gfo-price-label">Current CBOT Price (USD)</div>
+        <div class="gfo-price-label">Current CBOT Price (CAD)</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="gfo-price-value" id="gfoPriceValue">—</span>
           <button class="gfo-use-btn" id="gfoUseBtn" onclick="useCbotPrice()" style="display:none;">Use this price</button>
@@ -853,6 +853,26 @@ function setCachedPrice(price, month) {
   }
 }
 
+async function fetchUsdToCadRate() {
+  // Try fetching the USD to CAD exchange rate from free APIs
+  var urls = [
+    'https://open.er-api.com/v6/latest/USD',
+    'https://api.exchangerate-api.com/v4/latest/USD'
+  ];
+  for (var i = 0; i < urls.length; i++) {
+    try {
+      var resp = await fetch(urls[i]);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      var data = await resp.json();
+      var rate = data.rates && data.rates.CAD;
+      if (rate && rate > 0) return rate;
+    } catch (e) {
+      console.log('Exchange rate source ' + i + ' failed:', e);
+    }
+  }
+  return null;
+}
+
 async function fetchCornPrice(forceRefresh) {
   var banner = document.getElementById('priceBanner');
 
@@ -898,6 +918,14 @@ async function fetchCornPrice(forceRefresh) {
       var result = parseCornPrice(json);
 
       if (result.success) {
+        // Convert USD to CAD
+        var cadRate = await fetchUsdToCadRate();
+        if (cadRate) {
+          result.price = (parseFloat(result.price) * cadRate).toFixed(2);
+        } else {
+          console.warn('Could not fetch CAD rate, displaying USD price');
+        }
+
         // Cache the successful price
         setCachedPrice(result.price, result.month);
         showPriceSuccess(banner, result.price, result.month, 0);
@@ -963,7 +991,7 @@ function showPriceSuccess(banner, price, month, ageMinutes) {
   strong.textContent = '$' + price + '/bu';
   text.appendChild(strong);
 
-  var sourceText = ' (' + month + ' CBOT avg, USD';
+  var sourceText = ' (' + month + ' CBOT avg, CAD';
   if (ageMinutes > 0) {
     sourceText += ', cached ' + ageMinutes + 'm ago';
   }
@@ -996,7 +1024,7 @@ function updateCbotPriceBox(price, month, ageMinutes) {
   }
 
   if (priceSource) {
-    var sourceText = month + ' CBOT avg via Alpha Vantage (USD)';
+    var sourceText = month + ' CBOT avg via Alpha Vantage (CAD)';
     if (ageMinutes > 0) {
       sourceText += ' (cached ' + ageMinutes + 'm ago)';
     }
