@@ -272,6 +272,21 @@ canvas#compChart{display:block;width:100%;height:100%}
 .tab-panel.active{display:block}
 .tab-coming{padding:60px 20px;text-align:center;color:var(--text-dim);font-size:14px}
 .tab-coming strong{display:block;font-size:18px;color:var(--text);margin-bottom:8px}
+/* Utility calculator styles */
+.util-panel{padding:0}
+.util-form{display:flex;flex-direction:column;gap:10px}
+.util-row{display:flex;align-items:center;gap:10px}
+.util-row label{flex:1;font-size:13px;color:var(--text-dim)}
+.util-row input,.util-row select{width:120px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;text-align:right}
+.util-row input:focus{outline:none;border-color:var(--accent)}
+.util-result{margin-top:14px;padding:14px;background:var(--farm-dim);border:1px solid var(--border);border-radius:8px}
+.util-result-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+.util-result-row .ur-label{color:var(--text-dim)}
+.util-result-row .ur-value{font-weight:600;color:var(--accent);font-size:15px}
+.util-result-row.ur-total{border-top:1px solid var(--border);margin-top:6px;padding-top:10px}
+.util-result-row.ur-total .ur-value{font-size:17px;color:var(--green)}
+.util-section{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 2px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.util-note{font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.4}
 
 .hidden{display:none !important}
 </style>
@@ -325,6 +340,13 @@ canvas#compChart{display:block;width:100%;height:100%}
   <button class="tab-btn" data-tab="soybeans" onclick="switchTab('soybeans')">Soybeans</button>
   <button class="tab-btn" data-tab="wheat" onclick="switchTab('wheat')">Wheat</button>
   <button class="tab-btn" data-tab="hay" onclick="switchTab('hay')">Hay</button>
+  <button class="tab-btn" data-tab="drying" onclick="switchTab('drying')">Drying</button>
+  <button class="tab-btn" data-tab="manure-cost" onclick="switchTab('manure-cost')">Manure $/ac</button>
+  <button class="tab-btn" data-tab="manure-npk" onclick="switchTab('manure-npk')">Manure NPK</button>
+  <button class="tab-btn" data-tab="machine-sl" onclick="switchTab('machine-sl')">Dep (SL)</button>
+  <button class="tab-btn" data-tab="machine-hr" onclick="switchTab('machine-hr')">Dep ($/hr)</button>
+  <button class="tab-btn" data-tab="land-rent" onclick="switchTab('land-rent')">Land Rent</button>
+  <button class="tab-btn" data-tab="seed-fert" onclick="switchTab('seed-fert')">Seed &amp; Fert</button>
 </div>
 
 <!-- Tab Panels -->
@@ -724,6 +746,201 @@ canvas#compChart{display:block;width:100%;height:100%}
 <div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="hay_sensTable"></table></div><div class="sens-note">Net margin at different price and yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
 <div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Established stand (3+ year) · Enter hay price manually — no reliable local API source</div>
 </div><!-- tab-hay -->
+
+<!-- DRYING COSTS TAB -->
+<div class="tab-panel" id="tab-drying">
+<div class="panel"><div class="panel-title">Grain Drying Cost Calculator</div>
+<div class="util-form">
+  <div class="util-row"><label>Harvest Moisture (%)</label><input type="number" id="dry_harvMoist" value="25.0" step="0.5" min="10" max="40" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Target Moisture (%)</label><input type="number" id="dry_targMoist" value="15.5" step="0.5" min="10" max="25" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Propane Cost ($/L)</label><input type="number" id="dry_propane" value="0.65" step="0.01" min="0" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Electricity ($/kWh)</label><input type="number" id="dry_elec" value="0.13" step="0.01" min="0" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Bushels to Dry</label><input type="number" id="dry_bushels" value="10000" step="100" min="0" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Crop</label>
+    <select id="dry_crop" onchange="calcDrying()">
+      <option value="corn" selected>Corn</option>
+      <option value="soybeans">Soybeans</option>
+      <option value="wheat">Wheat</option>
+    </select>
+  </div>
+  <div class="util-result" id="dry_results">
+    <div class="util-result-row"><span class="ur-label">Points to Remove</span><span class="ur-value" id="dry_points">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Propane Cost / bu</span><span class="ur-value" id="dry_propCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Electricity Cost / bu</span><span class="ur-value" id="dry_elecCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Shrink Loss / bu</span><span class="ur-value" id="dry_shrink">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Drying Cost / bu</span><span class="ur-value" id="dry_totalBu">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost (all bushels)</span><span class="ur-value" id="dry_totalAll">—</span></div>
+  </div>
+  <div class="util-note">Propane usage: ~0.02 L per point per bushel (corn). Electricity: ~0.003 kWh per point per bushel. Shrink: 1.183% wet weight per point removed.</div>
+</div></div>
+</div><!-- tab-drying -->
+
+<!-- MANURE COST TAB -->
+<div class="tab-panel" id="tab-manure-cost">
+<div class="panel"><div class="panel-title">Manure Application Cost / Acre</div>
+<div class="util-form">
+  <div class="util-section">Manure Source</div>
+  <div class="util-row"><label>Manure Type</label>
+    <select id="mc_type" onchange="calcManureCost()">
+      <option value="liquid">Liquid (gal/ac)</option>
+      <option value="solid">Solid (ton/ac)</option>
+    </select>
+  </div>
+  <div class="util-row"><label>Application Rate</label><input type="number" id="mc_rate" value="4000" step="100" min="0" oninput="calcManureCost()"></div>
+  <div class="util-section">Costs</div>
+  <div class="util-row"><label>Hauling ($/hr)</label><input type="number" id="mc_haul" value="165" step="5" min="0" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Spreader Load Size</label><input type="number" id="mc_load" value="4000" step="100" min="1" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Loads per Hour</label><input type="number" id="mc_lph" value="2.5" step="0.1" min="0.1" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Acres per Load</label><input type="number" id="mc_apl" value="1.0" step="0.1" min="0.1" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Total Acres</label><input type="number" id="mc_acres" value="100" step="1" min="1" oninput="calcManureCost()"></div>
+  <div class="util-result" id="mc_results">
+    <div class="util-result-row"><span class="ur-label">Loads Needed</span><span class="ur-value" id="mc_loads">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Hours Required</span><span class="ur-value" id="mc_hours">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Cost per Acre</span><span class="ur-value" id="mc_costAc">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost</span><span class="ur-value" id="mc_totalCost">—</span></div>
+  </div>
+  <div class="util-note">Adjust load size and loads/hour based on your equipment and haul distance. Custom operators typically charge $150–$200/hr.</div>
+</div></div>
+</div><!-- tab-manure-cost -->
+
+<!-- MANURE NPK TAB -->
+<div class="tab-panel" id="tab-manure-npk">
+<div class="panel"><div class="panel-title">Manure Nutrient Credit Calculator</div>
+<div class="util-form">
+  <div class="util-section">Manure Analysis</div>
+  <div class="util-row"><label>Manure Type</label>
+    <select id="mn_type" onchange="calcManureNPK()">
+      <option value="dairy-l">Dairy Liquid</option>
+      <option value="dairy-s">Dairy Solid</option>
+      <option value="hog-l">Hog Liquid</option>
+      <option value="beef-s">Beef Solid</option>
+      <option value="poultry-s">Poultry Solid</option>
+      <option value="custom">Custom (enter below)</option>
+    </select>
+  </div>
+  <div class="util-row"><label>Application Rate</label><input type="number" id="mn_rate" value="4000" step="100" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>Units</label>
+    <select id="mn_units" onchange="calcManureNPK()">
+      <option value="gal">gal/ac</option>
+      <option value="ton">ton/ac</option>
+    </select>
+  </div>
+  <div class="util-section">Nutrient Content (lb per 1000 gal or per ton)</div>
+  <div class="util-row"><label>N (Nitrogen)</label><input type="number" id="mn_n" value="25" step="1" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>P₂O₅ (Phosphorus)</label><input type="number" id="mn_p" value="10" step="1" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>K₂O (Potash)</label><input type="number" id="mn_k" value="22" step="1" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-section">N Availability (%)</div>
+  <div class="util-row"><label>1st Year Availability</label><input type="number" id="mn_avail" value="50" step="5" min="0" max="100" oninput="calcManureNPK()"></div>
+  <div class="util-section">Fertilizer Prices ($/lb nutrient)</div>
+  <div class="util-row"><label>N price ($/lb)</label><input type="number" id="mn_prN" value="0.65" step="0.01" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>P₂O₅ price ($/lb)</label><input type="number" id="mn_prP" value="0.70" step="0.01" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>K₂O price ($/lb)</label><input type="number" id="mn_prK" value="0.55" step="0.01" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-result" id="mn_results">
+    <div class="util-result-row"><span class="ur-label">Available N (lb/ac)</span><span class="ur-value" id="mn_lbN">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Available P₂O₅ (lb/ac)</span><span class="ur-value" id="mn_lbP">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Available K₂O (lb/ac)</span><span class="ur-value" id="mn_lbK">—</span></div>
+    <div class="util-result-row"><span class="ur-label">N Credit Value</span><span class="ur-value" id="mn_valN">—</span></div>
+    <div class="util-result-row"><span class="ur-label">P₂O₅ Credit Value</span><span class="ur-value" id="mn_valP">—</span></div>
+    <div class="util-result-row"><span class="ur-label">K₂O Credit Value</span><span class="ur-value" id="mn_valK">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Nutrient Credit / ac</span><span class="ur-value" id="mn_totalAc">—</span></div>
+  </div>
+  <div class="util-note">Default N/P/K values are OMAFRA averages. Get your manure tested for best results. 1st-year N availability varies: ~50% liquid dairy, ~35% solid dairy, ~60% hog liquid, ~25% poultry.</div>
+</div></div>
+</div><!-- tab-manure-npk -->
+
+<!-- MACHINE DEPRECIATION SL TAB -->
+<div class="tab-panel" id="tab-machine-sl">
+<div class="panel"><div class="panel-title">Machine Depreciation — Straight Line</div>
+<div class="util-form">
+  <div class="util-row"><label>Purchase Price ($)</label><input type="number" id="sl_price" value="250000" step="1000" min="0" oninput="calcMachineSL()"></div>
+  <div class="util-row"><label>Salvage Value ($)</label><input type="number" id="sl_salvage" value="50000" step="1000" min="0" oninput="calcMachineSL()"></div>
+  <div class="util-row"><label>Useful Life (years)</label><input type="number" id="sl_life" value="10" step="1" min="1" max="50" oninput="calcMachineSL()"></div>
+  <div class="util-row"><label>Total Acres Served</label><input type="number" id="sl_acres" value="500" step="10" min="1" oninput="calcMachineSL()"></div>
+  <div class="util-result" id="sl_results">
+    <div class="util-result-row"><span class="ur-label">Depreciable Amount</span><span class="ur-value" id="sl_depAmt">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Annual Depreciation</span><span class="ur-value" id="sl_annual">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Depreciation / Acre</span><span class="ur-value" id="sl_perAc">—</span></div>
+  </div>
+  <div class="util-note">Straight-line: (Purchase Price − Salvage) ÷ Useful Life. Per-acre based on total acres the machine covers annually.</div>
+</div></div>
+</div><!-- tab-machine-sl -->
+
+<!-- MACHINE DEPRECIATION $/HR TAB -->
+<div class="tab-panel" id="tab-machine-hr">
+<div class="panel"><div class="panel-title">Machine Cost — $/hour &amp; $/acre</div>
+<div class="util-form">
+  <div class="util-section">Ownership Costs</div>
+  <div class="util-row"><label>Purchase Price ($)</label><input type="number" id="hr_price" value="250000" step="1000" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Salvage Value ($)</label><input type="number" id="hr_salvage" value="50000" step="1000" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Useful Life (hours)</label><input type="number" id="hr_lifeHrs" value="5000" step="100" min="1" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Insurance + Housing ($/yr)</label><input type="number" id="hr_insure" value="2000" step="100" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Hours Used / Year</label><input type="number" id="hr_hrsYr" value="400" step="10" min="1" oninput="calcMachineHr()"></div>
+  <div class="util-section">Operating Costs</div>
+  <div class="util-row"><label>Fuel ($/hr)</label><input type="number" id="hr_fuel" value="25.00" step="1" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Repairs &amp; Maint ($/hr)</label><input type="number" id="hr_repair" value="12.00" step="1" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Acres / Hour</label><input type="number" id="hr_acHr" value="15" step="1" min="0.1" oninput="calcMachineHr()"></div>
+  <div class="util-result" id="hr_results">
+    <div class="util-result-row"><span class="ur-label">Depreciation / hr</span><span class="ur-value" id="hr_depHr">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Insurance+Housing / hr</span><span class="ur-value" id="hr_insHr">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Fuel / hr</span><span class="ur-value" id="hr_fuelHr">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Repairs / hr</span><span class="ur-value" id="hr_repHr">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost / Hour</span><span class="ur-value" id="hr_totalHr">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost / Acre</span><span class="ur-value" id="hr_totalAc">—</span></div>
+  </div>
+  <div class="util-note">Includes ownership (depreciation, insurance, housing) and operating (fuel, repairs) costs. Adjust acres/hour for your implement width and speed.</div>
+</div></div>
+</div><!-- tab-machine-hr -->
+
+<!-- LAND RENT TAB -->
+<div class="tab-panel" id="tab-land-rent">
+<div class="panel"><div class="panel-title">Land Rent Calculator</div>
+<div class="util-form">
+  <div class="util-section">Crop Economics</div>
+  <div class="util-row"><label>Expected Yield (bu/ac)</label><input type="number" id="lr_yield" value="180" step="5" min="0" oninput="calcLandRent()"></div>
+  <div class="util-row"><label>Expected Price ($/bu)</label><input type="number" id="lr_price" value="6.00" step="0.25" min="0" oninput="calcLandRent()"></div>
+  <div class="util-row"><label>Variable Costs ($/ac)</label><input type="number" id="lr_varCost" value="700" step="10" min="0" oninput="calcLandRent()"></div>
+  <div class="util-row"><label>Desired Profit ($/ac)</label><input type="number" id="lr_profit" value="50" step="10" min="0" oninput="calcLandRent()"></div>
+  <div class="util-section">Rent Comparison</div>
+  <div class="util-row"><label>Quoted Rent ($/ac)</label><input type="number" id="lr_quoted" value="350" step="10" min="0" oninput="calcLandRent()"></div>
+  <div class="util-result" id="lr_results">
+    <div class="util-result-row"><span class="ur-label">Gross Revenue</span><span class="ur-value" id="lr_revenue">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Less Variable Costs</span><span class="ur-value" id="lr_lessCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Less Desired Profit</span><span class="ur-value" id="lr_lessProfit">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Max Affordable Rent</span><span class="ur-value" id="lr_maxRent">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Quoted Rent</span><span class="ur-value" id="lr_quotedShow">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Difference</span><span class="ur-value" id="lr_diff">—</span></div>
+  </div>
+  <div class="util-note">Max affordable rent = Revenue − Variable Costs − Desired Profit. Does not include overhead costs (depreciation, interest, insurance). Ontario average cash rent for cropland: $250–$400/ac depending on region and soil quality.</div>
+</div></div>
+</div><!-- tab-land-rent -->
+
+<!-- SEED & FERTILIZER TAB -->
+<div class="tab-panel" id="tab-seed-fert">
+<div class="panel"><div class="panel-title">Seed &amp; Fertilizer Cost Calculator</div>
+<div class="util-form">
+  <div class="util-section">Seed</div>
+  <div class="util-row"><label>Seed Cost ($/bag)</label><input type="number" id="sf_seedBag" value="300" step="10" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>Seeds per Bag</label><input type="number" id="sf_seedsPer" value="80000" step="1000" min="1" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>Seeding Rate (seeds/ac)</label><input type="number" id="sf_seedRate" value="34000" step="500" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-section">Fertilizer</div>
+  <div class="util-row"><label>N Rate (lb/ac)</label><input type="number" id="sf_nRate" value="150" step="5" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>N Price ($/lb)</label><input type="number" id="sf_nPrice" value="0.65" step="0.01" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>P₂O₅ Rate (lb/ac)</label><input type="number" id="sf_pRate" value="50" step="5" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>P₂O₅ Price ($/lb)</label><input type="number" id="sf_pPrice" value="0.70" step="0.01" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>K₂O Rate (lb/ac)</label><input type="number" id="sf_kRate" value="60" step="5" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>K₂O Price ($/lb)</label><input type="number" id="sf_kPrice" value="0.55" step="0.01" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>Total Acres</label><input type="number" id="sf_acres" value="100" step="10" min="1" oninput="calcSeedFert()"></div>
+  <div class="util-result" id="sf_results">
+    <div class="util-result-row"><span class="ur-label">Seed Cost / ac</span><span class="ur-value" id="sf_seedAc">—</span></div>
+    <div class="util-result-row"><span class="ur-label">N Cost / ac</span><span class="ur-value" id="sf_nCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">P₂O₅ Cost / ac</span><span class="ur-value" id="sf_pCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">K₂O Cost / ac</span><span class="ur-value" id="sf_kCost">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Seed + Fert / ac</span><span class="ur-value" id="sf_totalAc">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total (all acres)</span><span class="ur-value" id="sf_totalAll">—</span></div>
+  </div>
+  <div class="util-note">Corn: typically 80K seeds/bag, 32–36K seeds/ac. Soybeans: typically 140K seeds/bag, 130–150K seeds/ac. Ontario 2025 avg fertilizer prices from OMAFRA Pub 60.</div>
+</div></div>
+</div><!-- tab-seed-fert -->
 
 </div><!-- tabPanels -->
 
@@ -2313,6 +2530,202 @@ function hayUpdateAll(){hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdate
 var hayInitDone=false;
 function initHay(){if(hayInitDone)return;hayInitDone=true;buildHayTable();buildHayCards();buildHayOH();for(var i=0;i<HAY_CATS.length;i++)hayRenderDiff(i);hayUpdateAll();}
 
+// ═══ UTILITY CALCULATORS ═══
+
+// --- Drying Cost Calculator ---
+function calcDrying() {
+  var harvMoist = parseFloat(document.getElementById('dry_harvMoist').value) || 25;
+  var targMoist = parseFloat(document.getElementById('dry_targMoist').value) || 15.5;
+  var propanePrice = parseFloat(document.getElementById('dry_propane').value) || 0.65;
+  var elecPrice = parseFloat(document.getElementById('dry_elec').value) || 0.13;
+  var bushels = parseFloat(document.getElementById('dry_bushels').value) || 10000;
+  var crop = document.getElementById('dry_crop').value;
+
+  var points = Math.max(0, harvMoist - targMoist);
+  // Propane usage varies by crop (L per point per bushel)
+  var propaneRate = crop === 'corn' ? 0.02 : crop === 'soybeans' ? 0.025 : 0.018;
+  // Electricity (kWh per point per bushel)
+  var elecRate = crop === 'corn' ? 0.003 : crop === 'soybeans' ? 0.004 : 0.003;
+  // Shrink: 1.183% of wet weight per point
+  var shrinkPct = 0.01183;
+
+  var propCostBu = points * propaneRate * propanePrice;
+  var elecCostBu = points * elecRate * elecPrice;
+  // Shrink value: percentage of grain lost x price equivalent
+  // Use a reference price per bushel for shrink calculation
+  var refPrice = crop === 'corn' ? 6.00 : crop === 'soybeans' ? 15.50 : 8.00;
+  var shrinkBu = points * shrinkPct * refPrice;
+  var totalBu = propCostBu + elecCostBu + shrinkBu;
+  var totalAll = totalBu * bushels;
+
+  document.getElementById('dry_points').textContent = points.toFixed(1);
+  document.getElementById('dry_propCost').textContent = '$' + propCostBu.toFixed(3);
+  document.getElementById('dry_elecCost').textContent = '$' + elecCostBu.toFixed(3);
+  document.getElementById('dry_shrink').textContent = '$' + shrinkBu.toFixed(3);
+  document.getElementById('dry_totalBu').textContent = '$' + totalBu.toFixed(2);
+  document.getElementById('dry_totalAll').textContent = '$' + totalAll.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// --- Manure Cost / Acre ---
+function calcManureCost() {
+  var rate = parseFloat(document.getElementById('mc_rate').value) || 4000;
+  var haul = parseFloat(document.getElementById('mc_haul').value) || 165;
+  var loadSize = parseFloat(document.getElementById('mc_load').value) || 4000;
+  var lph = parseFloat(document.getElementById('mc_lph').value) || 2.5;
+  var apl = parseFloat(document.getElementById('mc_apl').value) || 1.0;
+  var acres = parseFloat(document.getElementById('mc_acres').value) || 100;
+
+  var loadsPerAcre = rate / loadSize;
+  var totalLoads = loadsPerAcre * acres;
+  var totalHours = totalLoads / lph;
+  var totalCost = totalHours * haul;
+  var costPerAc = totalCost / acres;
+
+  document.getElementById('mc_loads').textContent = totalLoads.toFixed(0);
+  document.getElementById('mc_hours').textContent = totalHours.toFixed(1);
+  document.getElementById('mc_costAc').textContent = '$' + costPerAc.toFixed(2);
+  document.getElementById('mc_totalCost').textContent = '$' + totalCost.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// --- Manure Nutrient Credit ---
+var MANURE_DEFAULTS = {
+  'dairy-l':  { n: 25, p: 10, k: 22, avail: 50, unit: 'gal' },
+  'dairy-s':  { n: 9,  p: 4,  k: 10, avail: 35, unit: 'ton' },
+  'hog-l':    { n: 40, p: 22, k: 18, avail: 60, unit: 'gal' },
+  'beef-s':   { n: 11, p: 7,  k: 12, avail: 30, unit: 'ton' },
+  'poultry-s':{ n: 30, p: 30, k: 18, avail: 45, unit: 'ton' },
+  'custom':   null
+};
+function calcManureNPK() {
+  var type = document.getElementById('mn_type').value;
+  var defaults = MANURE_DEFAULTS[type];
+  if (defaults) {
+    document.getElementById('mn_n').value = defaults.n;
+    document.getElementById('mn_p').value = defaults.p;
+    document.getElementById('mn_k').value = defaults.k;
+    document.getElementById('mn_avail').value = defaults.avail;
+    document.getElementById('mn_units').value = defaults.unit;
+  }
+  var rate = parseFloat(document.getElementById('mn_rate').value) || 0;
+  var units = document.getElementById('mn_units').value;
+  var nContent = parseFloat(document.getElementById('mn_n').value) || 0;
+  var pContent = parseFloat(document.getElementById('mn_p').value) || 0;
+  var kContent = parseFloat(document.getElementById('mn_k').value) || 0;
+  var availPct = (parseFloat(document.getElementById('mn_avail').value) || 50) / 100;
+  var nPrice = parseFloat(document.getElementById('mn_prN').value) || 0;
+  var pPrice = parseFloat(document.getElementById('mn_prP').value) || 0;
+  var kPrice = parseFloat(document.getElementById('mn_prK').value) || 0;
+
+  // Convert to lb/ac: content is per 1000 gal or per ton
+  var factor = units === 'gal' ? rate / 1000 : rate;
+  var lbN = nContent * factor * availPct;
+  var lbP = pContent * factor; // P and K fully available
+  var lbK = kContent * factor;
+
+  var valN = lbN * nPrice;
+  var valP = lbP * pPrice;
+  var valK = lbK * kPrice;
+  var total = valN + valP + valK;
+
+  document.getElementById('mn_lbN').textContent = lbN.toFixed(1);
+  document.getElementById('mn_lbP').textContent = lbP.toFixed(1);
+  document.getElementById('mn_lbK').textContent = lbK.toFixed(1);
+  document.getElementById('mn_valN').textContent = '$' + valN.toFixed(2);
+  document.getElementById('mn_valP').textContent = '$' + valP.toFixed(2);
+  document.getElementById('mn_valK').textContent = '$' + valK.toFixed(2);
+  document.getElementById('mn_totalAc').textContent = '$' + total.toFixed(2);
+}
+
+// --- Machine Depreciation (Straight Line) ---
+function calcMachineSL() {
+  var price = parseFloat(document.getElementById('sl_price').value) || 0;
+  var salvage = parseFloat(document.getElementById('sl_salvage').value) || 0;
+  var life = parseFloat(document.getElementById('sl_life').value) || 1;
+  var acres = parseFloat(document.getElementById('sl_acres').value) || 1;
+
+  var depAmt = Math.max(0, price - salvage);
+  var annual = depAmt / life;
+  var perAc = annual / acres;
+
+  document.getElementById('sl_depAmt').textContent = '$' + depAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  document.getElementById('sl_annual').textContent = '$' + annual.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  document.getElementById('sl_perAc').textContent = '$' + perAc.toFixed(2);
+}
+
+// --- Machine Cost $/hr ---
+function calcMachineHr() {
+  var price = parseFloat(document.getElementById('hr_price').value) || 0;
+  var salvage = parseFloat(document.getElementById('hr_salvage').value) || 0;
+  var lifeHrs = parseFloat(document.getElementById('hr_lifeHrs').value) || 1;
+  var insure = parseFloat(document.getElementById('hr_insure').value) || 0;
+  var hrsYr = parseFloat(document.getElementById('hr_hrsYr').value) || 1;
+  var fuel = parseFloat(document.getElementById('hr_fuel').value) || 0;
+  var repair = parseFloat(document.getElementById('hr_repair').value) || 0;
+  var acHr = parseFloat(document.getElementById('hr_acHr').value) || 1;
+
+  var depHr = Math.max(0, price - salvage) / lifeHrs;
+  var insHr = insure / hrsYr;
+  var totalHr = depHr + insHr + fuel + repair;
+  var totalAc = totalHr / acHr;
+
+  document.getElementById('hr_depHr').textContent = '$' + depHr.toFixed(2);
+  document.getElementById('hr_insHr').textContent = '$' + insHr.toFixed(2);
+  document.getElementById('hr_fuelHr').textContent = '$' + fuel.toFixed(2);
+  document.getElementById('hr_repHr').textContent = '$' + repair.toFixed(2);
+  document.getElementById('hr_totalHr').textContent = '$' + totalHr.toFixed(2);
+  document.getElementById('hr_totalAc').textContent = '$' + totalAc.toFixed(2);
+}
+
+// --- Land Rent Calculator ---
+function calcLandRent() {
+  var yld = parseFloat(document.getElementById('lr_yield').value) || 0;
+  var price = parseFloat(document.getElementById('lr_price').value) || 0;
+  var varCost = parseFloat(document.getElementById('lr_varCost').value) || 0;
+  var profit = parseFloat(document.getElementById('lr_profit').value) || 0;
+  var quoted = parseFloat(document.getElementById('lr_quoted').value) || 0;
+
+  var revenue = yld * price;
+  var maxRent = revenue - varCost - profit;
+  var diff = maxRent - quoted;
+
+  document.getElementById('lr_revenue').textContent = '$' + revenue.toFixed(2);
+  document.getElementById('lr_lessCost').textContent = '−$' + varCost.toFixed(2);
+  document.getElementById('lr_lessProfit').textContent = '−$' + profit.toFixed(2);
+  document.getElementById('lr_maxRent').textContent = '$' + maxRent.toFixed(2);
+  document.getElementById('lr_quotedShow').textContent = '$' + quoted.toFixed(2);
+  var diffEl = document.getElementById('lr_diff');
+  diffEl.textContent = (diff >= 0 ? '+' : '−') + '$' + Math.abs(diff).toFixed(2);
+  diffEl.style.color = diff >= 0 ? 'var(--green)' : 'var(--red, #e05a4a)';
+}
+
+// --- Seed & Fertilizer Calculator ---
+function calcSeedFert() {
+  var seedBag = parseFloat(document.getElementById('sf_seedBag').value) || 0;
+  var seedsPer = parseFloat(document.getElementById('sf_seedsPer').value) || 1;
+  var seedRate = parseFloat(document.getElementById('sf_seedRate').value) || 0;
+  var nRate = parseFloat(document.getElementById('sf_nRate').value) || 0;
+  var nPrice = parseFloat(document.getElementById('sf_nPrice').value) || 0;
+  var pRate = parseFloat(document.getElementById('sf_pRate').value) || 0;
+  var pPrice = parseFloat(document.getElementById('sf_pPrice').value) || 0;
+  var kRate = parseFloat(document.getElementById('sf_kRate').value) || 0;
+  var kPrice = parseFloat(document.getElementById('sf_kPrice').value) || 0;
+  var acres = parseFloat(document.getElementById('sf_acres').value) || 1;
+
+  var seedAc = (seedRate / seedsPer) * seedBag;
+  var nCost = nRate * nPrice;
+  var pCost = pRate * pPrice;
+  var kCost = kRate * kPrice;
+  var totalAc = seedAc + nCost + pCost + kCost;
+  var totalAll = totalAc * acres;
+
+  document.getElementById('sf_seedAc').textContent = '$' + seedAc.toFixed(2);
+  document.getElementById('sf_nCost').textContent = '$' + nCost.toFixed(2);
+  document.getElementById('sf_pCost').textContent = '$' + pCost.toFixed(2);
+  document.getElementById('sf_kCost').textContent = '$' + kCost.toFixed(2);
+  document.getElementById('sf_totalAc').textContent = '$' + totalAc.toFixed(2);
+  document.getElementById('sf_totalAll').textContent = '$' + totalAll.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 function updateAll(){
   updateTotals();drawChart();updateBE();updateSens();
   saveUserData();
@@ -2320,7 +2733,7 @@ function updateAll(){
 
 // ═══ TAB SYSTEM ═══
 var activeTab = 'corn';
-var allTabs = ['corn','soybeans','wheat','hay'];
+var allTabs = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert'];
 
 function switchTab(tabId) {
   var panels = document.querySelectorAll('.tab-panel');
@@ -2339,6 +2752,14 @@ function switchTab(tabId) {
   if (tabId === 'soybeans') { if(!soyInitDone) initSoy(); setTimeout(function(){ soyDrawChart(); }, 50); }
   if (tabId === 'wheat') { if(!whtInitDone) initWht(); setTimeout(function(){ whtDrawChart(); }, 50); }
   if (tabId === 'hay') { if(!hayInitDone) initHay(); setTimeout(function(){ hayDrawChart(); }, 50); }
+  // Utility tabs — run calculation on first view
+  if (tabId === 'drying') calcDrying();
+  if (tabId === 'manure-cost') calcManureCost();
+  if (tabId === 'manure-npk') calcManureNPK();
+  if (tabId === 'machine-sl') calcMachineSL();
+  if (tabId === 'machine-hr') calcMachineHr();
+  if (tabId === 'land-rent') calcLandRent();
+  if (tabId === 'seed-fert') calcSeedFert();
 }
 
 // Swipe between tabs
