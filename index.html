@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#1a1c1e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Corn Cost Calculator - PWA</title>
+<title>Farm Calculator - PWA</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -181,6 +181,7 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
 .chart-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--text-dim)}
 .cl-dot{width:12px;height:12px;border-radius:2px}
 .chart-container{position:relative;width:100%;height:320px}
+canvas.comp-chart{display:block;width:100%;height:100%}
 canvas#compChart{display:block;width:100%;height:100%}
 .be-layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .gfo-price-box{background:var(--surface-hi);border:1px solid var(--border);border-radius:7px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -224,6 +225,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 .source-note a{color:var(--accent);text-decoration:none}
 @media(max-width:640px){
   body{padding:16px 10px}
+  .tab-btn{padding:7px 12px;font-size:12px}
   .panel{padding:14px}
   .header h1{font-size:19px}
   .settings-row{gap:12px}
@@ -260,6 +262,51 @@ canvas#compChart{display:block;width:100%;height:100%}
   .overhead-grid{grid-template-columns:1fr 1fr}
 }
 
+/* Tab Bar */
+.tab-bar{display:flex;gap:2px;padding:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;padding:8px 16px;background:none;border:none;border-radius:7px;color:var(--text-dim);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.tab-btn:hover{color:var(--text);background:var(--surface-hi)}
+.tab-btn.active{color:var(--accent);background:var(--farm-dim);font-weight:600}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+.tab-coming{padding:60px 20px;text-align:center;color:var(--text-dim);font-size:14px}
+.tab-coming strong{display:block;font-size:18px;color:var(--text);margin-bottom:8px}
+/* Utility calculator styles */
+.util-panel{padding:0}
+.util-form{display:flex;flex-direction:column;gap:10px}
+.util-row{display:flex;align-items:center;gap:10px}
+.util-row label{flex:1;font-size:13px;color:var(--text-dim)}
+.util-row input,.util-row select{width:120px;padding:8px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;font-family:inherit;text-align:right}
+.util-row input:focus{outline:none;border-color:var(--accent)}
+.util-result{margin-top:14px;padding:14px;background:var(--farm-dim);border:1px solid var(--border);border-radius:8px}
+.util-result-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px}
+.util-result-row .ur-label{color:var(--text-dim)}
+.util-result-row .ur-value{font-weight:600;color:var(--accent);font-size:15px}
+.util-result-row.ur-total{border-top:1px solid var(--border);margin-top:6px;padding-top:10px}
+.util-result-row.ur-total .ur-value{font-size:17px;color:var(--green)}
+.util-section{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 2px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.util-note{font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.4}
+/* Tab settings modal */
+.tab-gear{flex-shrink:0;padding:8px 10px;background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;border-radius:7px;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tab-gear:hover{color:var(--accent);background:var(--surface-hi)}
+.tab-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.tab-modal-overlay.open{opacity:1;pointer-events:all}
+.tab-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(360px,90vw);max-height:80vh;overflow-y:auto;padding:16px}
+.tab-modal h3{margin:0 0 12px;font-size:16px;color:var(--text)}
+.tm-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--bg)}
+.tm-item.tm-hidden{opacity:.4}
+.tm-arrows{display:flex;flex-direction:column;gap:2px}
+.tm-arrows button{padding:2px 6px;background:var(--surface-hi);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:11px;cursor:pointer;line-height:1}
+.tm-arrows button:hover{color:var(--accent);border-color:var(--accent)}
+.tm-label{flex:1;font-size:13px;color:var(--text);font-weight:500}
+.tm-toggle{position:relative;width:36px;height:20px;background:var(--border);border-radius:10px;cursor:pointer;transition:background .2s;border:none}
+.tm-toggle.on{background:var(--accent)}
+.tm-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+.tm-toggle.on::after{transform:translateX(16px)}
+.tm-done{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px}
+.tm-done:hover{opacity:.9}
+
 .hidden{display:none !important}
 </style>
 </head>
@@ -268,7 +315,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 <!-- Auth Screen -->
 <div id="authScreen">
   <div class="auth-card">
-    <h1>🌽 Corn Calculator</h1>
+    <h1>Farm Calculator</h1>
     <p class="subtitle">Sign in to save your farm data</p>
     
     <form id="authForm" class="auth-form">
@@ -306,6 +353,37 @@ canvas#compChart{display:block;width:100%;height:100%}
   <button class="logout-btn" onclick="logout()">Sign Out</button>
 </div>
 
+<!-- Tab Bar -->
+<div class="tab-bar" id="tabBar">
+  <button class="tab-btn active" data-tab="corn" onclick="switchTab('corn')">Corn</button>
+  <button class="tab-btn" data-tab="soybeans" onclick="switchTab('soybeans')">Soybeans</button>
+  <button class="tab-btn" data-tab="wheat" onclick="switchTab('wheat')">Wheat</button>
+  <button class="tab-btn" data-tab="hay" onclick="switchTab('hay')">Hay</button>
+  <button class="tab-btn" data-tab="drying" onclick="switchTab('drying')">Drying</button>
+  <button class="tab-btn" data-tab="manure-cost" onclick="switchTab('manure-cost')">Manure $/ac</button>
+  <button class="tab-btn" data-tab="manure-npk" onclick="switchTab('manure-npk')">Manure NPK</button>
+  <button class="tab-btn" data-tab="machine-sl" onclick="switchTab('machine-sl')">Dep (SL)</button>
+  <button class="tab-btn" data-tab="machine-hr" onclick="switchTab('machine-hr')">Dep ($/hr)</button>
+  <button class="tab-btn" data-tab="land-rent" onclick="switchTab('land-rent')">Land Rent</button>
+  <button class="tab-btn" data-tab="seed-fert" onclick="switchTab('seed-fert')">Seed &amp; Fert</button>
+  <button class="tab-gear" onclick="openTabSettings()" title="Tab settings">&#9881;</button>
+</div>
+
+<!-- Tab Settings Modal -->
+<div class="tab-modal-overlay" id="tabModal" onclick="if(event.target===this)closeTabSettings()">
+  <div class="tab-modal">
+    <h3>Manage Tabs</h3>
+    <div id="tabSettingsList"></div>
+    <button class="tm-done" onclick="closeTabSettings()">Done</button>
+  </div>
+</div>
+
+<!-- Tab Panels -->
+<div id="tabPanels">
+
+<!-- CORN TAB -->
+<div class="tab-panel active" id="tab-corn">
+
 <!-- Price Update Banner -->
 <div id="priceBanner" class="price-banner loading">
   <div class="pb-icon">⏳</div>
@@ -313,8 +391,8 @@ canvas#compChart{display:block;width:100%;height:100%}
 </div>
 
 <div class="header">
-  <h1>🌽 Corn Cost Calculator</h1>
-  <p>Your Farm vs OMAFA 2025 — Southern Ontario · All changes save automatically</p>
+  <h1>Corn Cost Calculator</h1>
+  <p>Your Farm vs OMAFRA 2025 — Southern Ontario · All changes save automatically</p>
 </div>
 
 <div class="panel">
@@ -483,6 +561,418 @@ canvas#compChart{display:block;width:100%;height:100%}
   <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> ·
   Land rent: 2024 U of Guelph Farmland Survey · No-till values based on OMAFA no-till budget · Overhead = depreciation + interest + other fixed costs
 </div>
+</div><!-- tab-corn -->
+
+<!-- SOYBEANS TAB -->
+<div class="tab-panel" id="tab-soybeans">
+
+<div class="header">
+  <h1>Soybean Cost Calculator</h1>
+  <p>Your Farm vs OMAFRA 2025 — Southern Ontario · All changes save automatically</p>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Farm Settings</div>
+  <div class="settings-row">
+    <div class="setting-item">
+      <label>Total Soybean Acres</label>
+      <div class="setting-input">
+        <input type="number" id="soy_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="soyUpdateAll()">
+        <span class="unit">ac</span>
+      </div>
+    </div>
+    <div class="setting-item">
+      <label>Tillage System</label>
+      <div class="toggle-group">
+        <button class="toggle-btn active t-conv" id="soy_btnConv" onclick="setSoyTillage('conv')">Conventional</button>
+        <button class="toggle-btn" id="soy_btnNoTill" onclick="setSoyTillage('noTill')">No-Till</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Operating Costs ($/acre)</div>
+  <table class="comp-table">
+    <thead><tr>
+      <th style="text-align:left;width:36%">Category</th>
+      <th class="col-omafa" style="width:18%">OMAFRA</th>
+      <th class="col-farm" style="width:24%">Your Farm</th>
+      <th style="width:22%">Difference</th>
+    </tr></thead>
+    <tbody id="soy_tableBody"></tbody>
+  </table>
+  <div class="mobile-cards" id="soy_mobileCards"></div>
+  <div class="btn-row">
+    <button class="btn" onclick="soyResetFarm()">Reset to defaults</button>
+    <button class="btn copy-btn" onclick="soyResetFarm()">Copy OMAFRA values</button>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Overhead Costs ($/acre)</div>
+  <div class="overhead-grid" id="soy_overheadGrid"></div>
+  <div class="oh-total">Overhead Total: <strong id="soy_ohTotal">$52.50</strong>/ac</div>
+</div>
+
+<div class="totals-row">
+  <div class="total-card op-card">
+    <div class="tc-lbl">Operating</div>
+    <div class="tc-val" id="soy_totalOpWhole">—</div>
+    <div class="tc-per" id="soy_totalOpPer">—</div>
+  </div>
+  <div class="total-card oh-card">
+    <div class="tc-lbl">Overhead</div>
+    <div class="tc-val" id="soy_totalOhWhole">—</div>
+    <div class="tc-per" id="soy_totalOhPer">—</div>
+  </div>
+  <div class="total-card gr-card">
+    <div class="tc-lbl">Grand Total</div>
+    <div class="tc-val" id="soy_totalGrWhole">—</div>
+    <div class="tc-per" id="soy_totalGrPer">—</div>
+  </div>
+</div>
+<div class="diff-summary">vs OMAFRA: <strong id="soy_diffVal">—</strong><span id="soy_diffPct"></span></div>
+
+<div class="panel">
+  <div class="panel-title">Side-by-Side Comparison</div>
+  <div class="chart-legend">
+    <div class="chart-legend-item"><div class="cl-dot" style="background:rgba(91,155,213,.7)"></div>OMAFRA 2025</div>
+    <div class="chart-legend-item"><div class="cl-dot" style="background:rgba(212,168,50,.7)"></div>Your Farm</div>
+  </div>
+  <div class="chart-container"><canvas id="soy_compChart" class="comp-chart"></canvas></div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Breakeven Calculator</div>
+  <div class="gfo-price-box">
+    <div class="gfo-price-info">
+      <div>
+        <div class="gfo-price-label">Current GFO Price</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="gfo-price-value" id="soy_gfoPriceValue">—</span>
+          <button class="gfo-use-btn" id="soy_gfoUseBtn" onclick="useSoyFetchedPrice()" style="display:none;">Use this price</button>
+        </div>
+        <div class="gfo-price-source" id="soy_gfoPriceSource">Loading from GFO...</div>
+      </div>
+    </div>
+    <button class="gfo-update-btn" onclick="fetchSoyPrice(true)">Update Price</button>
+  </div>
+  <div class="be-layout">
+    <div class="be-inputs">
+      <div class="be-row">
+        <label>Soybean Price</label>
+        <div class="be-iw"><span class="sym">$</span>
+          <input type="number" id="soy_priceInput" value="15.50" min="0" max="50" step="0.01" inputmode="decimal" oninput="soyUpdateAll()">
+          <span class="unit">$/bu</span>
+        </div>
+      </div>
+      <div class="be-row">
+        <label>Your Yield</label>
+        <div class="be-iw">
+          <input type="number" id="soy_yieldInput" value="48" min="0" max="500" step="1" inputmode="numeric" oninput="soyUpdateAll()">
+          <span class="unit">bu/ac</span>
+        </div>
+      </div>
+    </div>
+    <div class="be-results">
+      <div class="be-card"><div class="bc-lbl">OMAFRA Breakeven</div><div class="bc-val bc-omafa" id="soy_beOmafa">—</div><div class="bc-sub">bu/acre needed</div></div>
+      <div class="be-card"><div class="bc-lbl">Your Breakeven</div><div class="bc-val bc-farm" id="soy_beFarm">—</div><div class="bc-sub">bu/acre needed</div></div>
+      <div class="be-card"><div class="bc-lbl">Gross Revenue</div><div class="bc-val" id="soy_beRevenue" style="color:var(--text)">—</div><div class="bc-sub">price x yield</div></div>
+      <div class="be-card wide"><div class="bc-lbl">Your Net Margin</div><div class="bc-val" id="soy_beMargin">—</div><div class="bc-sub" id="soy_beStatus">—</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div>
+  <div class="sens-scroll"><table class="sens-table" id="soy_sensTable"></table></div>
+  <div class="sens-note">Net margin at different price and yield combinations using your current grand total. Green = profitable · Red = loss · Yellow = near breakeven</div>
+</div>
+
+<div class="source-note">
+  Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness —
+  <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> ·
+  Land rent: 2024 U of Guelph Farmland Survey · No-till values based on OMAFRA no-till budget
+</div>
+
+</div><!-- tab-soybeans -->
+
+<!-- WHEAT TAB -->
+<div class="tab-panel" id="tab-wheat">
+<div class="header"><h1>Winter Wheat Cost Calculator</h1><p>Your Farm vs OMAFRA 2025 — Southern Ontario · All changes save automatically</p></div>
+<div class="panel"><div class="panel-title">Farm Settings</div><div class="settings-row">
+  <div class="setting-item"><label>Total Wheat Acres</label><div class="setting-input"><input type="number" id="wht_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="whtUpdateAll()"><span class="unit">ac</span></div></div>
+  <div class="setting-item"><label>Tillage System</label><div class="toggle-group"><button class="toggle-btn active t-conv" id="wht_btnConv" onclick="setWhtTillage('conv')">Conventional</button><button class="toggle-btn" id="wht_btnNoTill" onclick="setWhtTillage('noTill')">No-Till</button></div></div>
+</div></div>
+<div class="panel"><div class="panel-title">Operating Costs ($/acre)</div>
+  <table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="wht_tableBody"></tbody></table>
+  <div class="mobile-cards" id="wht_mobileCards"></div>
+  <div class="btn-row"><button class="btn" onclick="whtResetFarm()">Reset to defaults</button><button class="btn copy-btn" onclick="whtResetFarm()">Copy OMAFRA values</button></div>
+</div>
+<div class="panel"><div class="panel-title">Overhead Costs ($/acre)</div><div class="overhead-grid" id="wht_overheadGrid"></div><div class="oh-total">Overhead Total: <strong id="wht_ohTotal">$53.00</strong>/ac</div></div>
+<div class="totals-row">
+  <div class="total-card op-card"><div class="tc-lbl">Operating</div><div class="tc-val" id="wht_totalOpWhole">—</div><div class="tc-per" id="wht_totalOpPer">—</div></div>
+  <div class="total-card oh-card"><div class="tc-lbl">Overhead</div><div class="tc-val" id="wht_totalOhWhole">—</div><div class="tc-per" id="wht_totalOhPer">—</div></div>
+  <div class="total-card gr-card"><div class="tc-lbl">Grand Total</div><div class="tc-val" id="wht_totalGrWhole">—</div><div class="tc-per" id="wht_totalGrPer">—</div></div>
+</div>
+<div class="diff-summary">vs OMAFRA: <strong id="wht_diffVal">—</strong><span id="wht_diffPct"></span></div>
+<div class="panel"><div class="panel-title">Side-by-Side Comparison</div>
+  <div class="chart-legend"><div class="chart-legend-item"><div class="cl-dot" style="background:rgba(91,155,213,.7)"></div>OMAFRA 2025</div><div class="chart-legend-item"><div class="cl-dot" style="background:rgba(212,168,50,.7)"></div>Your Farm</div></div>
+  <div class="chart-container"><canvas id="wht_compChart" class="comp-chart"></canvas></div>
+</div>
+<div class="panel"><div class="panel-title">Breakeven Calculator</div>
+  <div class="gfo-price-box"><div class="gfo-price-info"><div><div class="gfo-price-label">Current GFO Price</div><div style="display:flex;align-items:center;gap:8px;"><span class="gfo-price-value" id="wht_gfoPriceValue">—</span><button class="gfo-use-btn" id="wht_gfoUseBtn" onclick="useWhtFetchedPrice()" style="display:none;">Use this price</button></div><div class="gfo-price-source" id="wht_gfoPriceSource">Loading from GFO...</div></div></div><button class="gfo-update-btn" onclick="fetchWhtPrice(true)">Update Price</button></div>
+  <div class="be-layout"><div class="be-inputs">
+    <div class="be-row"><label>Wheat Price</label><div class="be-iw"><span class="sym">$</span><input type="number" id="wht_priceInput" value="8.00" min="0" max="50" step="0.01" inputmode="decimal" oninput="whtUpdateAll()"><span class="unit">$/bu</span></div></div>
+    <div class="be-row"><label>Your Yield</label><div class="be-iw"><input type="number" id="wht_yieldInput" value="85" min="0" max="500" step="1" inputmode="numeric" oninput="whtUpdateAll()"><span class="unit">bu/ac</span></div></div>
+  </div>
+  <div class="be-results">
+    <div class="be-card"><div class="bc-lbl">OMAFRA Breakeven</div><div class="bc-val bc-omafa" id="wht_beOmafa">—</div><div class="bc-sub">bu/acre needed</div></div>
+    <div class="be-card"><div class="bc-lbl">Your Breakeven</div><div class="bc-val bc-farm" id="wht_beFarm">—</div><div class="bc-sub">bu/acre needed</div></div>
+    <div class="be-card"><div class="bc-lbl">Gross Revenue</div><div class="bc-val" id="wht_beRevenue" style="color:var(--text)">—</div><div class="bc-sub">price x yield</div></div>
+    <div class="be-card wide"><div class="bc-lbl">Your Net Margin</div><div class="bc-val" id="wht_beMargin">—</div><div class="bc-sub" id="wht_beStatus">—</div></div>
+  </div></div>
+</div>
+<div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="wht_sensTable"></table></div><div class="sens-note">Net margin at different price and yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
+<div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Land rent: 2024 U of Guelph Farmland Survey</div>
+</div><!-- tab-wheat -->
+
+<!-- HAY TAB -->
+<div class="tab-panel" id="tab-hay">
+<div class="header"><h1>Hay Cost Calculator</h1><p>Your Farm vs OMAFRA 2025 — Established Stand · All changes save automatically</p></div>
+<div class="panel"><div class="panel-title">Farm Settings</div><div class="settings-row">
+  <div class="setting-item"><label>Total Hay Acres</label><div class="setting-input"><input type="number" id="hay_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="hayUpdateAll()"><span class="unit">ac</span></div></div>
+</div></div>
+<div class="panel"><div class="panel-title">Operating Costs ($/acre)</div>
+  <table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="hay_tableBody"></tbody></table>
+  <div class="mobile-cards" id="hay_mobileCards"></div>
+  <div class="btn-row"><button class="btn" onclick="hayResetFarm()">Reset to defaults</button><button class="btn copy-btn" onclick="hayResetFarm()">Copy OMAFRA values</button></div>
+</div>
+<div class="panel"><div class="panel-title">Overhead Costs ($/acre)</div><div class="overhead-grid" id="hay_overheadGrid"></div><div class="oh-total">Overhead Total: <strong id="hay_ohTotal">$42.00</strong>/ac</div></div>
+<div class="totals-row">
+  <div class="total-card op-card"><div class="tc-lbl">Operating</div><div class="tc-val" id="hay_totalOpWhole">—</div><div class="tc-per" id="hay_totalOpPer">—</div></div>
+  <div class="total-card oh-card"><div class="tc-lbl">Overhead</div><div class="tc-val" id="hay_totalOhWhole">—</div><div class="tc-per" id="hay_totalOhPer">—</div></div>
+  <div class="total-card gr-card"><div class="tc-lbl">Grand Total</div><div class="tc-val" id="hay_totalGrWhole">—</div><div class="tc-per" id="hay_totalGrPer">—</div></div>
+</div>
+<div class="diff-summary">vs OMAFRA: <strong id="hay_diffVal">—</strong><span id="hay_diffPct"></span></div>
+<div class="panel"><div class="panel-title">Side-by-Side Comparison</div>
+  <div class="chart-legend"><div class="chart-legend-item"><div class="cl-dot" style="background:rgba(91,155,213,.7)"></div>OMAFRA 2025</div><div class="chart-legend-item"><div class="cl-dot" style="background:rgba(212,168,50,.7)"></div>Your Farm</div></div>
+  <div class="chart-container"><canvas id="hay_compChart" class="comp-chart"></canvas></div>
+</div>
+<div class="panel"><div class="panel-title">Breakeven Calculator</div>
+  <div class="be-layout"><div class="be-inputs">
+    <div class="be-row"><label>Hay Price</label><div class="be-iw"><span class="sym">$</span><input type="number" id="hay_priceInput" value="200" min="0" max="1000" step="1" inputmode="decimal" oninput="hayUpdateAll()"><span class="unit">$/ton</span></div></div>
+    <div class="be-row"><label>Your Yield</label><div class="be-iw"><input type="number" id="hay_yieldInput" value="3.5" min="0" max="20" step="0.1" inputmode="decimal" oninput="hayUpdateAll()"><span class="unit">ton/ac</span></div></div>
+  </div>
+  <div class="be-results">
+    <div class="be-card"><div class="bc-lbl">OMAFRA Breakeven</div><div class="bc-val bc-omafa" id="hay_beOmafa">—</div><div class="bc-sub">ton/acre needed</div></div>
+    <div class="be-card"><div class="bc-lbl">Your Breakeven</div><div class="bc-val bc-farm" id="hay_beFarm">—</div><div class="bc-sub">ton/acre needed</div></div>
+    <div class="be-card"><div class="bc-lbl">Gross Revenue</div><div class="bc-val" id="hay_beRevenue" style="color:var(--text)">—</div><div class="bc-sub">price x yield</div></div>
+    <div class="be-card wide"><div class="bc-lbl">Your Net Margin</div><div class="bc-val" id="hay_beMargin">—</div><div class="bc-sub" id="hay_beStatus">—</div></div>
+  </div></div>
+</div>
+<div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="hay_sensTable"></table></div><div class="sens-note">Net margin at different price and yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
+<div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Established stand (3+ year) · Enter hay price manually — no reliable local API source</div>
+</div><!-- tab-hay -->
+
+<!-- DRYING COSTS TAB -->
+<div class="tab-panel" id="tab-drying">
+<div class="panel"><div class="panel-title">Grain Drying Cost Calculator</div>
+<div class="util-form">
+  <div class="util-row"><label>Harvest Moisture (%)</label><input type="number" id="dry_harvMoist" value="25.0" step="0.5" min="10" max="40" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Target Moisture (%)</label><input type="number" id="dry_targMoist" value="15.5" step="0.5" min="10" max="25" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Propane Cost ($/L)</label><input type="number" id="dry_propane" value="0.65" step="0.01" min="0" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Electricity ($/kWh)</label><input type="number" id="dry_elec" value="0.13" step="0.01" min="0" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Bushels to Dry</label><input type="number" id="dry_bushels" value="10000" step="100" min="0" oninput="calcDrying()"></div>
+  <div class="util-row"><label>Crop</label>
+    <select id="dry_crop" onchange="calcDrying()">
+      <option value="corn" selected>Corn</option>
+      <option value="soybeans">Soybeans</option>
+      <option value="wheat">Wheat</option>
+    </select>
+  </div>
+  <div class="util-result" id="dry_results">
+    <div class="util-result-row"><span class="ur-label">Points to Remove</span><span class="ur-value" id="dry_points">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Propane Cost / bu</span><span class="ur-value" id="dry_propCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Electricity Cost / bu</span><span class="ur-value" id="dry_elecCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Shrink Loss / bu</span><span class="ur-value" id="dry_shrink">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Drying Cost / bu</span><span class="ur-value" id="dry_totalBu">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost (all bushels)</span><span class="ur-value" id="dry_totalAll">—</span></div>
+  </div>
+  <div class="util-note">Propane usage: ~0.02 L per point per bushel (corn). Electricity: ~0.003 kWh per point per bushel. Shrink: 1.183% wet weight per point removed.</div>
+</div></div>
+</div><!-- tab-drying -->
+
+<!-- MANURE COST TAB -->
+<div class="tab-panel" id="tab-manure-cost">
+<div class="panel"><div class="panel-title">Manure Application Cost / Acre</div>
+<div class="util-form">
+  <div class="util-section">Manure Source</div>
+  <div class="util-row"><label>Manure Type</label>
+    <select id="mc_type" onchange="calcManureCost()">
+      <option value="liquid">Liquid (gal/ac)</option>
+      <option value="solid">Solid (ton/ac)</option>
+    </select>
+  </div>
+  <div class="util-row"><label>Application Rate</label><input type="number" id="mc_rate" value="4000" step="100" min="0" oninput="calcManureCost()"></div>
+  <div class="util-section">Costs</div>
+  <div class="util-row"><label>Hauling ($/hr)</label><input type="number" id="mc_haul" value="165" step="5" min="0" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Spreader Load Size</label><input type="number" id="mc_load" value="4000" step="100" min="1" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Loads per Hour</label><input type="number" id="mc_lph" value="2.5" step="0.1" min="0.1" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Acres per Load</label><input type="number" id="mc_apl" value="1.0" step="0.1" min="0.1" oninput="calcManureCost()"></div>
+  <div class="util-row"><label>Total Acres</label><input type="number" id="mc_acres" value="100" step="1" min="1" oninput="calcManureCost()"></div>
+  <div class="util-result" id="mc_results">
+    <div class="util-result-row"><span class="ur-label">Loads Needed</span><span class="ur-value" id="mc_loads">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Hours Required</span><span class="ur-value" id="mc_hours">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Cost per Acre</span><span class="ur-value" id="mc_costAc">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost</span><span class="ur-value" id="mc_totalCost">—</span></div>
+  </div>
+  <div class="util-note">Adjust load size and loads/hour based on your equipment and haul distance. Custom operators typically charge $150–$200/hr.</div>
+</div></div>
+</div><!-- tab-manure-cost -->
+
+<!-- MANURE NPK TAB -->
+<div class="tab-panel" id="tab-manure-npk">
+<div class="panel"><div class="panel-title">Manure Nutrient Credit Calculator</div>
+<div class="util-form">
+  <div class="util-section">Manure Analysis</div>
+  <div class="util-row"><label>Manure Type</label>
+    <select id="mn_type" onchange="calcManureNPK()">
+      <option value="dairy-l">Dairy Liquid</option>
+      <option value="dairy-s">Dairy Solid</option>
+      <option value="hog-l">Hog Liquid</option>
+      <option value="beef-s">Beef Solid</option>
+      <option value="poultry-s">Poultry Solid</option>
+      <option value="custom">Custom (enter below)</option>
+    </select>
+  </div>
+  <div class="util-row"><label>Application Rate</label><input type="number" id="mn_rate" value="4000" step="100" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>Units</label>
+    <select id="mn_units" onchange="calcManureNPK()">
+      <option value="gal">gal/ac</option>
+      <option value="ton">ton/ac</option>
+    </select>
+  </div>
+  <div class="util-section">Nutrient Content (lb per 1000 gal or per ton)</div>
+  <div class="util-row"><label>N (Nitrogen)</label><input type="number" id="mn_n" value="25" step="1" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>P₂O₅ (Phosphorus)</label><input type="number" id="mn_p" value="10" step="1" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>K₂O (Potash)</label><input type="number" id="mn_k" value="22" step="1" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-section">N Availability (%)</div>
+  <div class="util-row"><label>1st Year Availability</label><input type="number" id="mn_avail" value="50" step="5" min="0" max="100" oninput="calcManureNPK()"></div>
+  <div class="util-section">Fertilizer Prices ($/lb nutrient)</div>
+  <div class="util-row"><label>N price ($/lb)</label><input type="number" id="mn_prN" value="0.65" step="0.01" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>P₂O₅ price ($/lb)</label><input type="number" id="mn_prP" value="0.70" step="0.01" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-row"><label>K₂O price ($/lb)</label><input type="number" id="mn_prK" value="0.55" step="0.01" min="0" oninput="calcManureNPK()"></div>
+  <div class="util-result" id="mn_results">
+    <div class="util-result-row"><span class="ur-label">Available N (lb/ac)</span><span class="ur-value" id="mn_lbN">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Available P₂O₅ (lb/ac)</span><span class="ur-value" id="mn_lbP">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Available K₂O (lb/ac)</span><span class="ur-value" id="mn_lbK">—</span></div>
+    <div class="util-result-row"><span class="ur-label">N Credit Value</span><span class="ur-value" id="mn_valN">—</span></div>
+    <div class="util-result-row"><span class="ur-label">P₂O₅ Credit Value</span><span class="ur-value" id="mn_valP">—</span></div>
+    <div class="util-result-row"><span class="ur-label">K₂O Credit Value</span><span class="ur-value" id="mn_valK">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Nutrient Credit / ac</span><span class="ur-value" id="mn_totalAc">—</span></div>
+  </div>
+  <div class="util-note">Default N/P/K values are OMAFRA averages. Get your manure tested for best results. 1st-year N availability varies: ~50% liquid dairy, ~35% solid dairy, ~60% hog liquid, ~25% poultry.</div>
+</div></div>
+</div><!-- tab-manure-npk -->
+
+<!-- MACHINE DEPRECIATION SL TAB -->
+<div class="tab-panel" id="tab-machine-sl">
+<div class="panel"><div class="panel-title">Machine Depreciation — Straight Line</div>
+<div class="util-form">
+  <div class="util-row"><label>Purchase Price ($)</label><input type="number" id="sl_price" value="250000" step="1000" min="0" oninput="calcMachineSL()"></div>
+  <div class="util-row"><label>Salvage Value ($)</label><input type="number" id="sl_salvage" value="50000" step="1000" min="0" oninput="calcMachineSL()"></div>
+  <div class="util-row"><label>Useful Life (years)</label><input type="number" id="sl_life" value="10" step="1" min="1" max="50" oninput="calcMachineSL()"></div>
+  <div class="util-row"><label>Total Acres Served</label><input type="number" id="sl_acres" value="500" step="10" min="1" oninput="calcMachineSL()"></div>
+  <div class="util-result" id="sl_results">
+    <div class="util-result-row"><span class="ur-label">Depreciable Amount</span><span class="ur-value" id="sl_depAmt">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Annual Depreciation</span><span class="ur-value" id="sl_annual">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Depreciation / Acre</span><span class="ur-value" id="sl_perAc">—</span></div>
+  </div>
+  <div class="util-note">Straight-line: (Purchase Price − Salvage) ÷ Useful Life. Per-acre based on total acres the machine covers annually.</div>
+</div></div>
+</div><!-- tab-machine-sl -->
+
+<!-- MACHINE DEPRECIATION $/HR TAB -->
+<div class="tab-panel" id="tab-machine-hr">
+<div class="panel"><div class="panel-title">Machine Cost — $/hour &amp; $/acre</div>
+<div class="util-form">
+  <div class="util-section">Ownership Costs</div>
+  <div class="util-row"><label>Purchase Price ($)</label><input type="number" id="hr_price" value="250000" step="1000" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Salvage Value ($)</label><input type="number" id="hr_salvage" value="50000" step="1000" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Useful Life (hours)</label><input type="number" id="hr_lifeHrs" value="5000" step="100" min="1" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Insurance + Housing ($/yr)</label><input type="number" id="hr_insure" value="2000" step="100" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Hours Used / Year</label><input type="number" id="hr_hrsYr" value="400" step="10" min="1" oninput="calcMachineHr()"></div>
+  <div class="util-section">Operating Costs</div>
+  <div class="util-row"><label>Fuel ($/hr)</label><input type="number" id="hr_fuel" value="25.00" step="1" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Repairs &amp; Maint ($/hr)</label><input type="number" id="hr_repair" value="12.00" step="1" min="0" oninput="calcMachineHr()"></div>
+  <div class="util-row"><label>Acres / Hour</label><input type="number" id="hr_acHr" value="15" step="1" min="0.1" oninput="calcMachineHr()"></div>
+  <div class="util-result" id="hr_results">
+    <div class="util-result-row"><span class="ur-label">Depreciation / hr</span><span class="ur-value" id="hr_depHr">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Insurance+Housing / hr</span><span class="ur-value" id="hr_insHr">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Fuel / hr</span><span class="ur-value" id="hr_fuelHr">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Repairs / hr</span><span class="ur-value" id="hr_repHr">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost / Hour</span><span class="ur-value" id="hr_totalHr">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Cost / Acre</span><span class="ur-value" id="hr_totalAc">—</span></div>
+  </div>
+  <div class="util-note">Includes ownership (depreciation, insurance, housing) and operating (fuel, repairs) costs. Adjust acres/hour for your implement width and speed.</div>
+</div></div>
+</div><!-- tab-machine-hr -->
+
+<!-- LAND RENT TAB -->
+<div class="tab-panel" id="tab-land-rent">
+<div class="panel"><div class="panel-title">Land Rent Calculator</div>
+<div class="util-form">
+  <div class="util-section">Crop Economics</div>
+  <div class="util-row"><label>Expected Yield (bu/ac)</label><input type="number" id="lr_yield" value="180" step="5" min="0" oninput="calcLandRent()"></div>
+  <div class="util-row"><label>Expected Price ($/bu)</label><input type="number" id="lr_price" value="6.00" step="0.25" min="0" oninput="calcLandRent()"></div>
+  <div class="util-row"><label>Variable Costs ($/ac)</label><input type="number" id="lr_varCost" value="700" step="10" min="0" oninput="calcLandRent()"></div>
+  <div class="util-row"><label>Desired Profit ($/ac)</label><input type="number" id="lr_profit" value="50" step="10" min="0" oninput="calcLandRent()"></div>
+  <div class="util-section">Rent Comparison</div>
+  <div class="util-row"><label>Quoted Rent ($/ac)</label><input type="number" id="lr_quoted" value="350" step="10" min="0" oninput="calcLandRent()"></div>
+  <div class="util-result" id="lr_results">
+    <div class="util-result-row"><span class="ur-label">Gross Revenue</span><span class="ur-value" id="lr_revenue">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Less Variable Costs</span><span class="ur-value" id="lr_lessCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Less Desired Profit</span><span class="ur-value" id="lr_lessProfit">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Max Affordable Rent</span><span class="ur-value" id="lr_maxRent">—</span></div>
+    <div class="util-result-row"><span class="ur-label">Quoted Rent</span><span class="ur-value" id="lr_quotedShow">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Difference</span><span class="ur-value" id="lr_diff">—</span></div>
+  </div>
+  <div class="util-note">Max affordable rent = Revenue − Variable Costs − Desired Profit. Does not include overhead costs (depreciation, interest, insurance). Ontario average cash rent for cropland: $250–$400/ac depending on region and soil quality.</div>
+</div></div>
+</div><!-- tab-land-rent -->
+
+<!-- SEED & FERTILIZER TAB -->
+<div class="tab-panel" id="tab-seed-fert">
+<div class="panel"><div class="panel-title">Seed &amp; Fertilizer Cost Calculator</div>
+<div class="util-form">
+  <div class="util-section">Seed</div>
+  <div class="util-row"><label>Seed Cost ($/bag)</label><input type="number" id="sf_seedBag" value="300" step="10" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>Seeds per Bag</label><input type="number" id="sf_seedsPer" value="80000" step="1000" min="1" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>Seeding Rate (seeds/ac)</label><input type="number" id="sf_seedRate" value="34000" step="500" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-section">Fertilizer</div>
+  <div class="util-row"><label>N Rate (lb/ac)</label><input type="number" id="sf_nRate" value="150" step="5" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>N Price ($/lb)</label><input type="number" id="sf_nPrice" value="0.65" step="0.01" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>P₂O₅ Rate (lb/ac)</label><input type="number" id="sf_pRate" value="50" step="5" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>P₂O₅ Price ($/lb)</label><input type="number" id="sf_pPrice" value="0.70" step="0.01" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>K₂O Rate (lb/ac)</label><input type="number" id="sf_kRate" value="60" step="5" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>K₂O Price ($/lb)</label><input type="number" id="sf_kPrice" value="0.55" step="0.01" min="0" oninput="calcSeedFert()"></div>
+  <div class="util-row"><label>Total Acres</label><input type="number" id="sf_acres" value="100" step="10" min="1" oninput="calcSeedFert()"></div>
+  <div class="util-result" id="sf_results">
+    <div class="util-result-row"><span class="ur-label">Seed Cost / ac</span><span class="ur-value" id="sf_seedAc">—</span></div>
+    <div class="util-result-row"><span class="ur-label">N Cost / ac</span><span class="ur-value" id="sf_nCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">P₂O₅ Cost / ac</span><span class="ur-value" id="sf_pCost">—</span></div>
+    <div class="util-result-row"><span class="ur-label">K₂O Cost / ac</span><span class="ur-value" id="sf_kCost">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total Seed + Fert / ac</span><span class="ur-value" id="sf_totalAc">—</span></div>
+    <div class="util-result-row ur-total"><span class="ur-label">Total (all acres)</span><span class="ur-value" id="sf_totalAll">—</span></div>
+  </div>
+  <div class="util-note">Corn: typically 80K seeds/bag, 32–36K seeds/ac. Soybeans: typically 140K seeds/bag, 130–150K seeds/ac. Ontario 2025 avg fertilizer prices from OMAFRA Pub 60.</div>
+</div></div>
+</div><!-- tab-seed-fert -->
+
+</div><!-- tabPanels -->
+
 </div><!-- .page -->
 </div><!-- #appScreen -->
 
@@ -533,9 +1023,80 @@ var OH = [
 var PRICES = [5.00,5.50,6.00,6.50,7.00];
 var YIELDS = [160,170,180,190,200];
 
+// ═══ SOYBEANS DATA (OMAFRA Pub 60, 2025) ═══
+var SOY_CATS = [
+  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914'},
+  {label:'Seed & Inoculant',     conv:103.50, notill:103.50, color:'#7c5cbf'},
+  {label:'Combining & Trucking', conv: 98.00, notill: 98.00, color:'#e8943a'},
+  {label:'Tillage',              conv: 62.50, notill: 15.00, color:'#a0825a'},
+  {label:'Herbicide',            conv: 48.00, notill: 56.00, color:'#c4d42e'},
+  {label:'Fertilizer (P, K)',    conv: 42.00, notill: 42.00, color:'#4caf6e'},
+  {label:'Planting',             conv: 25.50, notill: 25.50, color:'#f0c040'},
+  {label:'Insect. & Fungicides', conv: 18.00, notill: 18.00, color:'#e05a4a'}
+];
+var SOY_OH = [
+  {label:'Machinery Depreciation', val:35.00},
+  {label:'Interest on Investment', val:11.50},
+  {label:'Other Overhead',         val: 6.00}
+];
+var SOY_PRICES = [14.00,15.00,16.00,17.00,18.00];
+var SOY_YIELDS = [40,45,50,55,60];
+
+// ═══ WHEAT DATA (OMAFRA Pub 60, 2025) ═══
+var WHT_CATS = [
+  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914'},
+  {label:'Fertilizer (N, P, K)', conv:158.00, notill:158.00, color:'#4caf6e'},
+  {label:'Combining & Trucking', conv: 85.00, notill: 85.00, color:'#e8943a'},
+  {label:'Seed',                 conv: 56.00, notill: 56.00, color:'#7c5cbf'},
+  {label:'Tillage',              conv: 55.00, notill: 15.00, color:'#a0825a'},
+  {label:'Herbicide',            conv: 32.00, notill: 40.00, color:'#c4d42e'},
+  {label:'Fungicides',           conv: 30.00, notill: 30.00, color:'#e05a4a'},
+  {label:'Planting',             conv: 22.00, notill: 22.00, color:'#f0c040'},
+  {label:'Insecticides',         conv:  4.00, notill:  4.00, color:'#d4648a'}
+];
+var WHT_OH = [
+  {label:'Machinery Depreciation', val:36.00},
+  {label:'Interest on Investment', val:11.00},
+  {label:'Other Overhead',         val: 6.00}
+];
+var WHT_PRICES = [7.00,7.50,8.00,8.50,9.00];
+var WHT_YIELDS = [75,80,85,90,95];
+
+// ═══ HAY DATA (OMAFRA Pub 60, 2025 — Established Stand) ═══
+var HAY_CATS = [
+  {label:'Land Rent',             conv:275.00, notill:275.00, color:'#8B6914'},
+  {label:'Fertilizer',           conv: 92.00, notill: 92.00, color:'#4caf6e'},
+  {label:'Baling',               conv: 52.00, notill: 52.00, color:'#e8943a'},
+  {label:'Mowing & Conditioning',conv: 42.00, notill: 42.00, color:'#5b9bd5'},
+  {label:'Hauling & Storage',    conv: 28.00, notill: 28.00, color:'#7c5cbf'},
+  {label:'Raking / Tedding',     conv: 18.00, notill: 18.00, color:'#f0c040'},
+  {label:'Seed (Amortized)',     conv: 18.00, notill: 18.00, color:'#c4d42e'},
+  {label:'Herbicide',            conv:  8.00, notill:  8.00, color:'#a0825a'}
+];
+var HAY_OH = [
+  {label:'Machinery Depreciation', val:28.00},
+  {label:'Interest on Investment', val: 9.00},
+  {label:'Other Overhead',         val: 5.00}
+];
+var HAY_PRICES = [150,175,200,225,250];
+var HAY_YIELDS = [2.5,3.0,3.5,4.0,4.5];
+
+// ═══ CROP STATE ═══
 var mode = 'conv';
 var farmVals = CATS.map(function(c){return c.conv;});
 var farmOH   = OH.map(function(o){return o.val;});
+
+var soyMode = 'conv';
+var soyFarmVals = SOY_CATS.map(function(c){return c.conv;});
+var soyFarmOH   = SOY_OH.map(function(o){return o.val;});
+
+var whtMode = 'conv';
+var whtFarmVals = WHT_CATS.map(function(c){return c.conv;});
+var whtFarmOH   = WHT_OH.map(function(o){return o.val;});
+
+var hayFarmVals = HAY_CATS.map(function(c){return c.conv;});
+var hayFarmOH   = HAY_OH.map(function(o){return o.val;});
+
 var saveTimeout = null;
 
 // ═══ AUTH UI ═══
@@ -635,8 +1196,11 @@ auth.onAuthStateChanged(function(user) {
     document.getElementById('userName').textContent = username;
     document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
     
+    loadTabSettings();
     loadUserData();
     fetchCornPrice();
+    fetchSoyPrice();
+    fetchWhtPrice();
   } else {
     currentUser = null;
     document.getElementById('authScreen').classList.remove('hidden');
@@ -649,7 +1213,8 @@ var saveRetryCount = 0;
 var maxSaveRetries = 3;
 
 function getSaveData() {
-  return {
+  var data = {
+    version: 2,
     acreage: parseFloat(document.getElementById('acreageInput').value) || 100,
     mode: mode,
     cornOnCorn: document.getElementById('cornOnCorn').checked,
@@ -662,6 +1227,44 @@ function getSaveData() {
     yield: parseFloat(document.getElementById('yieldInput').value) || 185,
     lastUpdated: Date.now()
   };
+  // Soybeans data
+  var soyAcEl = document.getElementById('soy_acreageInput');
+  var soyPrEl = document.getElementById('soy_priceInput');
+  var soyYlEl = document.getElementById('soy_yieldInput');
+  data.soybeans = {
+    acreage: soyAcEl ? (parseFloat(soyAcEl.value) || 100) : 100,
+    mode: soyMode,
+    farmVals: soyFarmVals,
+    farmOH: soyFarmOH,
+    price: soyPrEl ? (parseFloat(soyPrEl.value) || 15.50) : 15.50,
+    yield: soyYlEl ? (parseFloat(soyYlEl.value) || 48) : 48
+  };
+  // Wheat data
+  var whtAcEl = document.getElementById('wht_acreageInput');
+  var whtPrEl = document.getElementById('wht_priceInput');
+  var whtYlEl = document.getElementById('wht_yieldInput');
+  data.wheat = {
+    acreage: whtAcEl ? (parseFloat(whtAcEl.value) || 100) : 100,
+    mode: whtMode,
+    farmVals: whtFarmVals,
+    farmOH: whtFarmOH,
+    price: whtPrEl ? (parseFloat(whtPrEl.value) || 8.00) : 8.00,
+    yield: whtYlEl ? (parseFloat(whtYlEl.value) || 85) : 85
+  };
+  // Hay data
+  var hayAcEl = document.getElementById('hay_acreageInput');
+  var hayPrEl = document.getElementById('hay_priceInput');
+  var hayYlEl = document.getElementById('hay_yieldInput');
+  data.hay = {
+    acreage: hayAcEl ? (parseFloat(hayAcEl.value) || 100) : 100,
+    farmVals: hayFarmVals,
+    farmOH: hayFarmOH,
+    price: hayPrEl ? (parseFloat(hayPrEl.value) || 200) : 200,
+    yield: hayYlEl ? (parseFloat(hayYlEl.value) || 3.5) : 3.5
+  };
+  // Tab settings
+  data.tabSettings = { order: tabOrder, hidden: hiddenTabs };
+  return data;
 }
 
 function showSaveStatus(type, message) {
@@ -785,6 +1388,78 @@ function applyLoadedData(data) {
   document.getElementById('dryRate').value = data.dryRate || 13.51;
   document.getElementById('priceInput').value = data.price || 6.06;
   document.getElementById('yieldInput').value = data.yield || 185;
+
+  // Load soybeans data
+  if (data.soybeans) {
+    var s = data.soybeans;
+    soyMode = s.mode || 'conv';
+    if (s.farmVals && Array.isArray(s.farmVals) && s.farmVals.length === SOY_CATS.length) {
+      var valid = s.farmVals.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) soyFarmVals = s.farmVals;
+    }
+    if (s.farmOH && Array.isArray(s.farmOH) && s.farmOH.length === SOY_OH.length) {
+      var valid = s.farmOH.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) soyFarmOH = s.farmOH;
+    }
+    var soyAcEl = document.getElementById('soy_acreageInput');
+    var soyPrEl = document.getElementById('soy_priceInput');
+    var soyYlEl = document.getElementById('soy_yieldInput');
+    if (soyAcEl) soyAcEl.value = s.acreage || 100;
+    if (soyPrEl) soyPrEl.value = s.price || 15.50;
+    if (soyYlEl) soyYlEl.value = s.yield || 48;
+  }
+
+  // Load wheat data
+  if (data.wheat) {
+    var w = data.wheat;
+    whtMode = w.mode || 'conv';
+    if (w.farmVals && Array.isArray(w.farmVals) && w.farmVals.length === WHT_CATS.length) {
+      var valid = w.farmVals.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) whtFarmVals = w.farmVals;
+    }
+    if (w.farmOH && Array.isArray(w.farmOH) && w.farmOH.length === WHT_OH.length) {
+      var valid = w.farmOH.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) whtFarmOH = w.farmOH;
+    }
+    var whtAcEl = document.getElementById('wht_acreageInput');
+    var whtPrEl = document.getElementById('wht_priceInput');
+    var whtYlEl = document.getElementById('wht_yieldInput');
+    if (whtAcEl) whtAcEl.value = w.acreage || 100;
+    if (whtPrEl) whtPrEl.value = w.price || 8.00;
+    if (whtYlEl) whtYlEl.value = w.yield || 85;
+  }
+
+  // Load hay data
+  if (data.hay) {
+    var h = data.hay;
+    if (h.farmVals && Array.isArray(h.farmVals) && h.farmVals.length === HAY_CATS.length) {
+      var valid = h.farmVals.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) hayFarmVals = h.farmVals;
+    }
+    if (h.farmOH && Array.isArray(h.farmOH) && h.farmOH.length === HAY_OH.length) {
+      var valid = h.farmOH.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) hayFarmOH = h.farmOH;
+    }
+    var hayAcEl = document.getElementById('hay_acreageInput');
+    var hayPrEl = document.getElementById('hay_priceInput');
+    var hayYlEl = document.getElementById('hay_yieldInput');
+    if (hayAcEl) hayAcEl.value = h.acreage || 100;
+    if (hayPrEl) hayPrEl.value = h.price || 200;
+    if (hayYlEl) hayYlEl.value = h.yield || 3.5;
+  }
+
+  // Load tab settings from Firebase (override localStorage)
+  if (data.tabSettings) {
+    var ts = data.tabSettings;
+    if (ts.order && Array.isArray(ts.order)) {
+      var order = ts.order.filter(function(t) { return DEFAULT_TAB_ORDER.indexOf(t) >= 0; });
+      DEFAULT_TAB_ORDER.forEach(function(t) { if (order.indexOf(t) < 0) order.push(t); });
+      tabOrder = order;
+    }
+    if (ts.hidden && typeof ts.hidden === 'object') hiddenTabs = ts.hidden;
+    saveTabSettings();
+    applyTabSettings();
+  }
 
   return true;
 }
@@ -1338,9 +2013,933 @@ function sensText(m){
   return(r>=0.3&&r<=0.7)?'#1a1c1e':'#f0f0f0';
 }
 
+// ═══ SOYBEANS CALCULATOR ═══
+function soyOmafa(i){return soyMode==='conv'?SOY_CATS[i].conv:SOY_CATS[i].notill;}
+function soyOmafaOpTot(){var t=0;for(var i=0;i<SOY_CATS.length;i++)t+=soyOmafa(i);return t;}
+function soyOmafaOhTot(){var t=0;for(var i=0;i<SOY_OH.length;i++)t+=SOY_OH[i].val;return t;}
+function soyFarmOpTot(){var t=0;for(var i=0;i<soyFarmVals.length;i++)t+=soyFarmVals[i];return t;}
+function soyFarmOhTot(){var t=0;for(var i=0;i<soyFarmOH.length;i++)t+=soyFarmOH[i];return t;}
+function soyFarmGrand(){return soyFarmOpTot()+soyFarmOhTot();}
+function soyOmafaGrand(){return soyOmafaOpTot()+soyOmafaOhTot();}
+function soyAcres(){return parseFloat(document.getElementById('soy_acreageInput').value)||1;}
+
+function buildSoyTable(){
+  var tb=document.getElementById('soy_tableBody');if(!tb)return;tb.innerHTML='';
+  for(var i=0;i<SOY_CATS.length;i++){
+    var c=SOY_CATS[i],tr=document.createElement('tr');
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+      '<td class="val-omafa" id="soy_om_'+i+'">$'+f2(soyOmafa(i))+'</td>'+
+      '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span>'+
+        '<input type="number" id="soy_f_'+i+'" value="'+f2(soyFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="soyUpFarm('+i+',this.value)">'+
+      '</div></td>'+
+      '<td class="diff-cell" id="soy_d_'+i+'"></td>';
+    tb.appendChild(tr);
+  }
+}
+function buildSoyCards(){
+  var el=document.getElementById('soy_mobileCards');if(!el)return;el.innerHTML='';
+  for(var i=0;i<SOY_CATS.length;i++){
+    var c=SOY_CATS[i],card=document.createElement('div');card.className='m-card';
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="soy_md_'+i+'"></div></div>'+
+      '<div class="m-card-row">'+
+        '<div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="soy_mom_'+i+'">$'+f2(soyOmafa(i))+'</div></div>'+
+        '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span>'+
+          '<input type="number" id="soy_mf_'+i+'" value="'+f2(soyFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="soyUpFarm('+i+',this.value)">'+
+        '</div></div></div>';
+    el.appendChild(card);
+  }
+}
+function buildSoyOH(){
+  var g=document.getElementById('soy_overheadGrid');if(!g)return;g.innerHTML='';
+  for(var i=0;i<SOY_OH.length;i++){
+    var item=document.createElement('div');item.className='oh-item';
+    item.innerHTML='<div class="oh-label">'+SOY_OH[i].label+'</div>'+
+      '<div class="oh-iw"><span class="sym">$</span>'+
+        '<input type="number" id="soy_oh_'+i+'" value="'+f2(soyFarmOH[i])+'" min="0" max="500" step="0.01" inputmode="decimal" oninput="soyUpOH('+i+',this.value)">'+
+      '</div>';
+    g.appendChild(item);
+  }
+}
+function soyUpFarm(i,v){
+  soyFarmVals[i]=parseFloat(v)||0;
+  var d=document.getElementById('soy_f_'+i),m=document.getElementById('soy_mf_'+i);
+  if(d&&document.activeElement!==d)d.value=v;
+  if(m&&document.activeElement!==m)m.value=v;
+  soyRenderDiff(i);soyUpdateTotals();soyDrawChart();soyUpdateBE();soyUpdateSens();
+  saveUserData();
+}
+function soyUpOH(i,v){
+  soyFarmOH[i]=parseFloat(v)||0;
+  soyUpdateTotals();soyUpdateBE();soyUpdateSens();
+  saveUserData();
+}
+function soyRenderDiff(i){
+  var diff=soyFarmVals[i]-soyOmafa(i),cls,sign;
+  if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
+  else if(diff<0){cls='diff-pos';sign='-$'+Math.abs(diff).toFixed(2);}
+  else{cls='diff-neg';sign='+$'+diff.toFixed(2);}
+  var html='<span class="diff-badge">'+sign+'</span>';
+  var d=document.getElementById('soy_d_'+i);if(d){d.className='diff-cell '+cls;d.innerHTML=html;}
+  var m=document.getElementById('soy_md_'+i);if(m){m.className='diff-cell '+cls;m.innerHTML=html;}
+}
+function soyUpdateOmafaCol(){
+  for(var i=0;i<SOY_CATS.length;i++){
+    var d=document.getElementById('soy_om_'+i);if(d)d.textContent='$'+f2(soyOmafa(i));
+    var m=document.getElementById('soy_mom_'+i);if(m)m.textContent='$'+f2(soyOmafa(i));
+    soyRenderDiff(i);
+  }
+}
+function setSoyTillage(m){
+  soyMode=m;
+  var bc=document.getElementById('soy_btnConv'),bn=document.getElementById('soy_btnNoTill');
+  if(bc)bc.className='toggle-btn'+(m==='conv'?' active t-conv':'');
+  if(bn)bn.className='toggle-btn'+(m==='noTill'?' active t-notill':'');
+  soyUpdateOmafaCol();soyUpdateTotals();soyDrawChart();soyUpdateBE();soyUpdateSens();
+  saveUserData();
+}
+function soyResetFarm(){
+  for(var i=0;i<SOY_CATS.length;i++){
+    soyFarmVals[i]=soyOmafa(i);
+    var d=document.getElementById('soy_f_'+i);if(d)d.value=f2(soyFarmVals[i]);
+    var m=document.getElementById('soy_mf_'+i);if(m)m.value=f2(soyFarmVals[i]);
+    soyRenderDiff(i);
+  }
+  for(var i=0;i<SOY_OH.length;i++){
+    soyFarmOH[i]=SOY_OH[i].val;
+    var e=document.getElementById('soy_oh_'+i);if(e)e.value=f2(soyFarmOH[i]);
+  }
+  soyUpdateTotals();soyDrawChart();soyUpdateBE();soyUpdateSens();
+  saveUserData();
+}
+function soyUpdateTotals(){
+  var ac=soyAcres();
+  var opT=soyFarmOpTot(),ohT=soyFarmOhTot(),grT=opT+ohT;
+  var el=function(id){return document.getElementById(id);};
+  if(el('soy_totalOpWhole'))el('soy_totalOpWhole').textContent=fmtComma(opT*ac);
+  if(el('soy_totalOpPer'))el('soy_totalOpPer').textContent='$'+f2(opT)+' / acre';
+  if(el('soy_totalOhWhole'))el('soy_totalOhWhole').textContent=fmtComma(ohT*ac);
+  if(el('soy_totalOhPer'))el('soy_totalOhPer').textContent='$'+f2(ohT)+' / acre';
+  if(el('soy_totalGrWhole'))el('soy_totalGrWhole').textContent=fmtComma(grT*ac);
+  if(el('soy_totalGrPer'))el('soy_totalGrPer').textContent='$'+f2(grT)+' / acre';
+  if(el('soy_ohTotal'))el('soy_ohTotal').textContent='$'+f2(ohT);
+  var omG=soyOmafaGrand(),diff=grT-omG;
+  var dEl=el('soy_diffVal'),pEl=el('soy_diffPct');
+  if(dEl&&pEl){
+    if(Math.abs(diff)<0.005){dEl.textContent='$0.00';dEl.className='';pEl.textContent=' — on budget';}
+    else if(diff<0){dEl.textContent='-$'+Math.abs(diff).toFixed(2);dEl.className='ds-pos';pEl.textContent=' ('+(Math.abs(diff)/omG*100).toFixed(1)+'% under OMAFRA)';}
+    else{dEl.textContent='+$'+diff.toFixed(2);dEl.className='ds-neg';pEl.textContent=' ('+(diff/omG*100).toFixed(1)+'% over OMAFRA)';}
+  }
+}
+function soyDrawChart(){
+  var canvas=document.getElementById('soy_compChart');
+  if(!canvas||!canvas.getContext)return;
+  var ctx=canvas.getContext('2d');
+  var rect=canvas.getBoundingClientRect();
+  if(rect.width<10||rect.height<10)return;
+  var dpr=window.devicePixelRatio||1;
+  canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
+  ctx.scale(dpr,dpr);
+  var w=rect.width,h=rect.height;
+  ctx.clearRect(0,0,w,h);
+  var isMob=w<500;
+  var pL=isMob?105:145,pR=16,pT=8,pB=26;
+  var cW=w-pL-pR,cH=h-pT-pB;
+  var n=SOY_CATS.length,gH=cH/n,bH=Math.min(gH*0.36,13),gap=2;
+  var mx=0;
+  for(var i=0;i<n;i++){var o=soyOmafa(i);if(o>mx)mx=o;if(soyFarmVals[i]>mx)mx=soyFarmVals[i];}
+  mx*=1.12;var sc=cW/mx;
+  var step=100;
+  ctx.strokeStyle='rgba(58,61,66,0.5)';ctx.lineWidth=1;
+  ctx.fillStyle='#7a7e85';ctx.font=(isMob?'9':'10')+'px Barlow,-apple-system,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  for(var t=0;t<=mx;t+=step){var x=pL+t*sc;if(x>w-pR+1)break;ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,h-pB);ctx.stroke();ctx.fillText('$'+t,x,h-pB+4);}
+  for(var i=0;i<n;i++){
+    var y=pT+i*gH,oV=soyOmafa(i),fV=soyFarmVals[i];
+    var oW=oV*sc,fW=fV*sc;
+    var y1=y+gH/2-gap-bH,y2=y+gH/2+gap;
+    ctx.fillStyle='rgba(91,155,213,0.55)';ctx.strokeStyle='rgba(91,155,213,0.85)';ctx.lineWidth=1;
+    rRect(ctx,pL,y1,Math.max(oW,1),bH,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(212,168,50,0.55)';ctx.strokeStyle='rgba(212,168,50,0.85)';
+    rRect(ctx,pL,y2,Math.max(fW,1),bH,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e2e4e7';ctx.font=(isMob?'500 10px':'500 11px')+' Barlow,-apple-system,sans-serif';
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    var lbl=SOY_CATS[i].label;if(isMob&&lbl.length>13)lbl=lbl.substring(0,12)+'\u2026';
+    ctx.fillText(lbl,pL-8,y+gH/2);
+  }
+}
+function soyUpdateBE(){
+  var price=parseFloat(document.getElementById('soy_priceInput').value)||0;
+  var yld=parseFloat(document.getElementById('soy_yieldInput').value)||0;
+  var el=function(id){return document.getElementById(id);};
+  var oG=soyOmafaGrand(),fG=soyFarmGrand();
+  var beO=price>0?oG/price:Infinity;
+  var beF=price>0?fG/price:Infinity;
+  if(el('soy_beOmafa'))el('soy_beOmafa').textContent=isFinite(beO)?beO.toFixed(1)+' bu':'—';
+  if(el('soy_beFarm'))el('soy_beFarm').textContent=isFinite(beF)?beF.toFixed(1)+' bu':'—';
+  var rev=price*yld,margin=rev-fG;
+  if(el('soy_beRevenue'))el('soy_beRevenue').textContent='$'+f2(rev);
+  var mEl=el('soy_beMargin'),mSub=el('soy_beStatus');
+  if(mEl&&mSub){
+    mEl.textContent=(margin>=0?'+':'')+' $'+f2(margin);
+    if(margin>=0){mEl.style.color='var(--green)';mSub.textContent='surplus — '+(margin/fG*100).toFixed(1)+'% above costs';mSub.style.color='var(--green)';}
+    else{mEl.style.color='var(--red)';var need=isFinite(beF)?beF-yld:0;mSub.textContent='shortfall — need '+need.toFixed(1)+' more bu/ac';mSub.style.color='var(--red)';}
+  }
+}
+function soyUpdateSens(){
+  var gT=soyFarmGrand();
+  var tbl=document.getElementById('soy_sensTable');if(!tbl)return;
+  var html='<tr><th class="sens-corner">Yield \\ Price</th>';
+  for(var p=0;p<SOY_PRICES.length;p++)html+='<th class="sens-price-hdr">$'+SOY_PRICES[p].toFixed(2)+'/bu</th>';
+  html+='</tr>';
+  for(var y=0;y<SOY_YIELDS.length;y++){
+    html+='<tr><th class="sens-yield-hdr">'+SOY_YIELDS[y]+' bu</th>';
+    for(var p=0;p<SOY_PRICES.length;p++){
+      var margin=(SOY_PRICES[p]*SOY_YIELDS[y])-gT;
+      var bg=sensColor(margin),tc=sensText(margin);
+      var disp=(margin>=0?'+':'')+Math.round(margin);
+      html+='<td style="background:'+bg+';color:'+tc+'">$'+disp+'</td>';
+    }
+    html+='</tr>';
+  }
+  tbl.innerHTML=html;
+}
+function soyUpdateAll(){
+  soyUpdateTotals();soyDrawChart();soyUpdateBE();soyUpdateSens();
+  saveUserData();
+}
+var soyInitDone=false;
+function initSoy(){
+  if(soyInitDone)return;soyInitDone=true;
+  buildSoyTable();buildSoyCards();buildSoyOH();
+  for(var i=0;i<SOY_CATS.length;i++)soyRenderDiff(i);
+  soyUpdateAll();
+}
+
+// ═══ SOYBEANS PRICE FETCHING ═══
+var SOY_PRICE_CACHE_KEY = 'soyCalcPriceCache';
+var currentSoyFetchedPrice = null;
+
+function fetchSoyPrice(forceRefresh){
+  if(!forceRefresh){
+    try{
+      var cached=localStorage.getItem(SOY_PRICE_CACHE_KEY);
+      if(cached){var d=JSON.parse(cached);if(Date.now()-d.timestamp<PRICE_CACHE_DURATION){
+        showSoyPrice(d.price,d.month,Math.round((Date.now()-d.timestamp)/60000));
+        document.getElementById('soy_priceInput').value=d.price;soyUpdateAll();return;
+      }}
+    }catch(e){}
+  }
+  var el=function(id){return document.getElementById(id);};
+  if(el('soy_gfoPriceValue')){el('soy_gfoPriceValue').textContent='...';el('soy_gfoPriceValue').style.color='var(--omafa)';}
+  if(el('soy_gfoPriceSource'))el('soy_gfoPriceSource').textContent='Fetching from GFO...';
+  var urls=['soybean-price.json','https://raw.githubusercontent.com/aibosdalefarms-commits/corn-calculator/main/soybean-price.json'];
+  (async function(){
+    for(var i=0;i<urls.length;i++){
+      try{
+        var r=await fetch(urls[i],{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);
+        var data=await r.json();
+        if(data.price&&data.month){
+          try{localStorage.setItem(SOY_PRICE_CACHE_KEY,JSON.stringify({price:data.price,month:data.month,timestamp:Date.now()}));}catch(e){}
+          showSoyPrice(data.price,data.month,0);
+          document.getElementById('soy_priceInput').value=data.price;soyUpdateAll();return;
+        }
+      }catch(e){console.log('Soy price fetch '+i+' failed:',e);}
+    }
+    if(el('soy_gfoPriceValue')){el('soy_gfoPriceValue').textContent='—';el('soy_gfoPriceValue').style.color='var(--red)';}
+    if(el('soy_gfoPriceSource'))el('soy_gfoPriceSource').textContent='Could not fetch price. Click Update to retry.';
+  })();
+}
+function showSoyPrice(price,month,age){
+  currentSoyFetchedPrice=price;
+  var el=function(id){return document.getElementById(id);};
+  if(el('soy_gfoPriceValue')){el('soy_gfoPriceValue').textContent='$'+price+'/bu';el('soy_gfoPriceValue').style.color='var(--green)';}
+  if(el('soy_gfoPriceSource')){var t=month+' average from gfo.ca';if(age>0)t+=' (cached '+age+'m ago)';el('soy_gfoPriceSource').textContent=t;}
+  if(el('soy_gfoUseBtn')){
+    var cur=parseFloat(el('soy_priceInput').value)||0;
+    el('soy_gfoUseBtn').style.display=Math.abs(cur-parseFloat(price))>0.01?'inline-block':'none';
+  }
+}
+function useSoyFetchedPrice(){
+  if(currentSoyFetchedPrice){document.getElementById('soy_priceInput').value=currentSoyFetchedPrice;soyUpdateAll();
+    var b=document.getElementById('soy_gfoUseBtn');if(b)b.style.display='none';}
+}
+
+// ═══ WHEAT CALCULATOR ═══
+function whtOmafa(i){return whtMode==='conv'?WHT_CATS[i].conv:WHT_CATS[i].notill;}
+function whtOmafaOpTot(){var t=0;for(var i=0;i<WHT_CATS.length;i++)t+=whtOmafa(i);return t;}
+function whtOmafaOhTot(){var t=0;for(var i=0;i<WHT_OH.length;i++)t+=WHT_OH[i].val;return t;}
+function whtFarmOpTot(){var t=0;for(var i=0;i<whtFarmVals.length;i++)t+=whtFarmVals[i];return t;}
+function whtFarmOhTot(){var t=0;for(var i=0;i<whtFarmOH.length;i++)t+=whtFarmOH[i];return t;}
+function whtFarmGrand(){return whtFarmOpTot()+whtFarmOhTot();}
+function whtOmafaGrand(){return whtOmafaOpTot()+whtOmafaOhTot();}
+function whtAcres(){return parseFloat(document.getElementById('wht_acreageInput').value)||1;}
+function buildWhtTable(){
+  var tb=document.getElementById('wht_tableBody');if(!tb)return;tb.innerHTML='';
+  for(var i=0;i<WHT_CATS.length;i++){
+    var c=WHT_CATS[i],tr=document.createElement('tr');
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+      '<td class="val-omafa" id="wht_om_'+i+'">$'+f2(whtOmafa(i))+'</td>'+
+      '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="wht_f_'+i+'" value="'+f2(whtFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="whtUpFarm('+i+',this.value)"></div></td>'+
+      '<td class="diff-cell" id="wht_d_'+i+'"></td>';
+    tb.appendChild(tr);
+  }
+}
+function buildWhtCards(){
+  var el=document.getElementById('wht_mobileCards');if(!el)return;el.innerHTML='';
+  for(var i=0;i<WHT_CATS.length;i++){
+    var c=WHT_CATS[i],card=document.createElement('div');card.className='m-card';
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="wht_md_'+i+'"></div></div>'+
+      '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="wht_mom_'+i+'">$'+f2(whtOmafa(i))+'</div></div>'+
+      '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="wht_mf_'+i+'" value="'+f2(whtFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="whtUpFarm('+i+',this.value)"></div></div></div>';
+    el.appendChild(card);
+  }
+}
+function buildWhtOH(){
+  var g=document.getElementById('wht_overheadGrid');if(!g)return;g.innerHTML='';
+  for(var i=0;i<WHT_OH.length;i++){
+    var item=document.createElement('div');item.className='oh-item';
+    item.innerHTML='<div class="oh-label">'+WHT_OH[i].label+'</div><div class="oh-iw"><span class="sym">$</span><input type="number" id="wht_oh_'+i+'" value="'+f2(whtFarmOH[i])+'" min="0" max="500" step="0.01" inputmode="decimal" oninput="whtUpOH('+i+',this.value)"></div>';
+    g.appendChild(item);
+  }
+}
+function whtUpFarm(i,v){
+  whtFarmVals[i]=parseFloat(v)||0;
+  var d=document.getElementById('wht_f_'+i),m=document.getElementById('wht_mf_'+i);
+  if(d&&document.activeElement!==d)d.value=v;if(m&&document.activeElement!==m)m.value=v;
+  whtRenderDiff(i);whtUpdateTotals();whtDrawChart();whtUpdateBE();whtUpdateSens();saveUserData();
+}
+function whtUpOH(i,v){whtFarmOH[i]=parseFloat(v)||0;whtUpdateTotals();whtUpdateBE();whtUpdateSens();saveUserData();}
+function whtRenderDiff(i){
+  var diff=whtFarmVals[i]-whtOmafa(i),cls,sign;
+  if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
+  else if(diff<0){cls='diff-pos';sign='-$'+Math.abs(diff).toFixed(2);}
+  else{cls='diff-neg';sign='+$'+diff.toFixed(2);}
+  var html='<span class="diff-badge">'+sign+'</span>';
+  var d=document.getElementById('wht_d_'+i);if(d){d.className='diff-cell '+cls;d.innerHTML=html;}
+  var m=document.getElementById('wht_md_'+i);if(m){m.className='diff-cell '+cls;m.innerHTML=html;}
+}
+function whtUpdateOmafaCol(){
+  for(var i=0;i<WHT_CATS.length;i++){
+    var d=document.getElementById('wht_om_'+i);if(d)d.textContent='$'+f2(whtOmafa(i));
+    var m=document.getElementById('wht_mom_'+i);if(m)m.textContent='$'+f2(whtOmafa(i));
+    whtRenderDiff(i);
+  }
+}
+function setWhtTillage(m){
+  whtMode=m;
+  var bc=document.getElementById('wht_btnConv'),bn=document.getElementById('wht_btnNoTill');
+  if(bc)bc.className='toggle-btn'+(m==='conv'?' active t-conv':'');
+  if(bn)bn.className='toggle-btn'+(m==='noTill'?' active t-notill':'');
+  whtUpdateOmafaCol();whtUpdateTotals();whtDrawChart();whtUpdateBE();whtUpdateSens();saveUserData();
+}
+function whtResetFarm(){
+  for(var i=0;i<WHT_CATS.length;i++){whtFarmVals[i]=whtOmafa(i);var d=document.getElementById('wht_f_'+i);if(d)d.value=f2(whtFarmVals[i]);var m=document.getElementById('wht_mf_'+i);if(m)m.value=f2(whtFarmVals[i]);whtRenderDiff(i);}
+  for(var i=0;i<WHT_OH.length;i++){whtFarmOH[i]=WHT_OH[i].val;var e=document.getElementById('wht_oh_'+i);if(e)e.value=f2(whtFarmOH[i]);}
+  whtUpdateTotals();whtDrawChart();whtUpdateBE();whtUpdateSens();saveUserData();
+}
+function whtUpdateTotals(){
+  var ac=whtAcres(),opT=whtFarmOpTot(),ohT=whtFarmOhTot(),grT=opT+ohT;
+  var el=function(id){return document.getElementById(id);};
+  if(el('wht_totalOpWhole'))el('wht_totalOpWhole').textContent=fmtComma(opT*ac);
+  if(el('wht_totalOpPer'))el('wht_totalOpPer').textContent='$'+f2(opT)+' / acre';
+  if(el('wht_totalOhWhole'))el('wht_totalOhWhole').textContent=fmtComma(ohT*ac);
+  if(el('wht_totalOhPer'))el('wht_totalOhPer').textContent='$'+f2(ohT)+' / acre';
+  if(el('wht_totalGrWhole'))el('wht_totalGrWhole').textContent=fmtComma(grT*ac);
+  if(el('wht_totalGrPer'))el('wht_totalGrPer').textContent='$'+f2(grT)+' / acre';
+  if(el('wht_ohTotal'))el('wht_ohTotal').textContent='$'+f2(ohT);
+  var omG=whtOmafaGrand(),diff=grT-omG;
+  var dEl=el('wht_diffVal'),pEl=el('wht_diffPct');
+  if(dEl&&pEl){
+    if(Math.abs(diff)<0.005){dEl.textContent='$0.00';dEl.className='';pEl.textContent=' — on budget';}
+    else if(diff<0){dEl.textContent='-$'+Math.abs(diff).toFixed(2);dEl.className='ds-pos';pEl.textContent=' ('+(Math.abs(diff)/omG*100).toFixed(1)+'% under OMAFRA)';}
+    else{dEl.textContent='+$'+diff.toFixed(2);dEl.className='ds-neg';pEl.textContent=' ('+(diff/omG*100).toFixed(1)+'% over OMAFRA)';}
+  }
+}
+function whtDrawChart(){
+  var canvas=document.getElementById('wht_compChart');
+  if(!canvas||!canvas.getContext)return;
+  var ctx=canvas.getContext('2d');var rect=canvas.getBoundingClientRect();
+  if(rect.width<10||rect.height<10)return;
+  var dpr=window.devicePixelRatio||1;canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
+  var w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);
+  var isMob=w<500,pL=isMob?105:145,pR=16,pT=8,pB=26;
+  var cW=w-pL-pR,cH=h-pT-pB,n=WHT_CATS.length,gH=cH/n,bH=Math.min(gH*0.36,13),gap=2;
+  var mx=0;for(var i=0;i<n;i++){var o=whtOmafa(i);if(o>mx)mx=o;if(whtFarmVals[i]>mx)mx=whtFarmVals[i];}
+  mx*=1.12;var sc=cW/mx;var step=100;
+  ctx.strokeStyle='rgba(58,61,66,0.5)';ctx.lineWidth=1;ctx.fillStyle='#7a7e85';
+  ctx.font=(isMob?'9':'10')+'px Barlow,-apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+  for(var t=0;t<=mx;t+=step){var x=pL+t*sc;if(x>w-pR+1)break;ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,h-pB);ctx.stroke();ctx.fillText('$'+t,x,h-pB+4);}
+  for(var i=0;i<n;i++){
+    var y=pT+i*gH,oV=whtOmafa(i),fV=whtFarmVals[i],oW=oV*sc,fW=fV*sc;
+    var y1=y+gH/2-gap-bH,y2=y+gH/2+gap;
+    ctx.fillStyle='rgba(91,155,213,0.55)';ctx.strokeStyle='rgba(91,155,213,0.85)';ctx.lineWidth=1;
+    rRect(ctx,pL,y1,Math.max(oW,1),bH,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(212,168,50,0.55)';ctx.strokeStyle='rgba(212,168,50,0.85)';
+    rRect(ctx,pL,y2,Math.max(fW,1),bH,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e2e4e7';ctx.font=(isMob?'500 10px':'500 11px')+' Barlow,-apple-system,sans-serif';
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    var lbl=WHT_CATS[i].label;if(isMob&&lbl.length>13)lbl=lbl.substring(0,12)+'\u2026';
+    ctx.fillText(lbl,pL-8,y+gH/2);
+  }
+}
+function whtUpdateBE(){
+  var price=parseFloat(document.getElementById('wht_priceInput').value)||0;
+  var yld=parseFloat(document.getElementById('wht_yieldInput').value)||0;
+  var el=function(id){return document.getElementById(id);};
+  var oG=whtOmafaGrand(),fG=whtFarmGrand();
+  var beO=price>0?oG/price:Infinity,beF=price>0?fG/price:Infinity;
+  if(el('wht_beOmafa'))el('wht_beOmafa').textContent=isFinite(beO)?beO.toFixed(1)+' bu':'—';
+  if(el('wht_beFarm'))el('wht_beFarm').textContent=isFinite(beF)?beF.toFixed(1)+' bu':'—';
+  var rev=price*yld,margin=rev-fG;
+  if(el('wht_beRevenue'))el('wht_beRevenue').textContent='$'+f2(rev);
+  var mEl=el('wht_beMargin'),mSub=el('wht_beStatus');
+  if(mEl&&mSub){
+    mEl.textContent=(margin>=0?'+':'')+' $'+f2(margin);
+    if(margin>=0){mEl.style.color='var(--green)';mSub.textContent='surplus — '+(margin/fG*100).toFixed(1)+'% above costs';mSub.style.color='var(--green)';}
+    else{mEl.style.color='var(--red)';var need=isFinite(beF)?beF-yld:0;mSub.textContent='shortfall — need '+need.toFixed(1)+' more bu/ac';mSub.style.color='var(--red)';}
+  }
+}
+function whtUpdateSens(){
+  var gT=whtFarmGrand(),tbl=document.getElementById('wht_sensTable');if(!tbl)return;
+  var html='<tr><th class="sens-corner">Yield \\ Price</th>';
+  for(var p=0;p<WHT_PRICES.length;p++)html+='<th class="sens-price-hdr">$'+WHT_PRICES[p].toFixed(2)+'/bu</th>';
+  html+='</tr>';
+  for(var y=0;y<WHT_YIELDS.length;y++){
+    html+='<tr><th class="sens-yield-hdr">'+WHT_YIELDS[y]+' bu</th>';
+    for(var p=0;p<WHT_PRICES.length;p++){var margin=(WHT_PRICES[p]*WHT_YIELDS[y])-gT;var bg=sensColor(margin),tc=sensText(margin);html+='<td style="background:'+bg+';color:'+tc+'">$'+(margin>=0?'+':'')+Math.round(margin)+'</td>';}
+    html+='</tr>';
+  }
+  tbl.innerHTML=html;
+}
+function whtUpdateAll(){whtUpdateTotals();whtDrawChart();whtUpdateBE();whtUpdateSens();saveUserData();}
+var whtInitDone=false;
+function initWht(){if(whtInitDone)return;whtInitDone=true;buildWhtTable();buildWhtCards();buildWhtOH();for(var i=0;i<WHT_CATS.length;i++)whtRenderDiff(i);whtUpdateAll();}
+
+// ═══ WHEAT PRICE FETCHING ═══
+var WHT_PRICE_CACHE_KEY = 'whtCalcPriceCache';
+var currentWhtFetchedPrice = null;
+function fetchWhtPrice(forceRefresh){
+  if(!forceRefresh){try{var cached=localStorage.getItem(WHT_PRICE_CACHE_KEY);if(cached){var d=JSON.parse(cached);if(Date.now()-d.timestamp<PRICE_CACHE_DURATION){showWhtPrice(d.price,d.month,Math.round((Date.now()-d.timestamp)/60000));document.getElementById('wht_priceInput').value=d.price;whtUpdateAll();return;}}}catch(e){}}
+  var el=function(id){return document.getElementById(id);};
+  if(el('wht_gfoPriceValue')){el('wht_gfoPriceValue').textContent='...';el('wht_gfoPriceValue').style.color='var(--omafa)';}
+  if(el('wht_gfoPriceSource'))el('wht_gfoPriceSource').textContent='Fetching from GFO...';
+  var urls=['wheat-price.json','https://raw.githubusercontent.com/aibosdalefarms-commits/corn-calculator/main/wheat-price.json'];
+  (async function(){
+    for(var i=0;i<urls.length;i++){
+      try{var r=await fetch(urls[i],{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);var data=await r.json();
+        if(data.price&&data.month){try{localStorage.setItem(WHT_PRICE_CACHE_KEY,JSON.stringify({price:data.price,month:data.month,timestamp:Date.now()}));}catch(e){}
+          showWhtPrice(data.price,data.month,0);document.getElementById('wht_priceInput').value=data.price;whtUpdateAll();return;}}
+      catch(e){console.log('Wheat price fetch '+i+' failed:',e);}
+    }
+    if(el('wht_gfoPriceValue')){el('wht_gfoPriceValue').textContent='—';el('wht_gfoPriceValue').style.color='var(--red)';}
+    if(el('wht_gfoPriceSource'))el('wht_gfoPriceSource').textContent='Could not fetch price. Click Update to retry.';
+  })();
+}
+function showWhtPrice(price,month,age){
+  currentWhtFetchedPrice=price;var el=function(id){return document.getElementById(id);};
+  if(el('wht_gfoPriceValue')){el('wht_gfoPriceValue').textContent='$'+price+'/bu';el('wht_gfoPriceValue').style.color='var(--green)';}
+  if(el('wht_gfoPriceSource')){var t=month+' average from gfo.ca';if(age>0)t+=' (cached '+age+'m ago)';el('wht_gfoPriceSource').textContent=t;}
+  if(el('wht_gfoUseBtn')){var cur=parseFloat(el('wht_priceInput').value)||0;el('wht_gfoUseBtn').style.display=Math.abs(cur-parseFloat(price))>0.01?'inline-block':'none';}
+}
+function useWhtFetchedPrice(){if(currentWhtFetchedPrice){document.getElementById('wht_priceInput').value=currentWhtFetchedPrice;whtUpdateAll();var b=document.getElementById('wht_gfoUseBtn');if(b)b.style.display='none';}}
+
+// ═══ HAY CALCULATOR ═══
+function hayOmafa(i){return HAY_CATS[i].conv;}
+function hayOmafaOpTot(){var t=0;for(var i=0;i<HAY_CATS.length;i++)t+=hayOmafa(i);return t;}
+function hayOmafaOhTot(){var t=0;for(var i=0;i<HAY_OH.length;i++)t+=HAY_OH[i].val;return t;}
+function hayFarmOpTot(){var t=0;for(var i=0;i<hayFarmVals.length;i++)t+=hayFarmVals[i];return t;}
+function hayFarmOhTot(){var t=0;for(var i=0;i<hayFarmOH.length;i++)t+=hayFarmOH[i];return t;}
+function hayFarmGrand(){return hayFarmOpTot()+hayFarmOhTot();}
+function hayOmafaGrand(){return hayOmafaOpTot()+hayOmafaOhTot();}
+function hayAcres(){return parseFloat(document.getElementById('hay_acreageInput').value)||1;}
+function buildHayTable(){
+  var tb=document.getElementById('hay_tableBody');if(!tb)return;tb.innerHTML='';
+  for(var i=0;i<HAY_CATS.length;i++){
+    var c=HAY_CATS[i],tr=document.createElement('tr');
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+      '<td class="val-omafa" id="hay_om_'+i+'">$'+f2(hayOmafa(i))+'</td>'+
+      '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="hay_f_'+i+'" value="'+f2(hayFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpFarm('+i+',this.value)"></div></td>'+
+      '<td class="diff-cell" id="hay_d_'+i+'"></td>';
+    tb.appendChild(tr);
+  }
+}
+function buildHayCards(){
+  var el=document.getElementById('hay_mobileCards');if(!el)return;el.innerHTML='';
+  for(var i=0;i<HAY_CATS.length;i++){
+    var c=HAY_CATS[i],card=document.createElement('div');card.className='m-card';
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="hay_md_'+i+'"></div></div>'+
+      '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="hay_mom_'+i+'">$'+f2(hayOmafa(i))+'</div></div>'+
+      '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="hay_mf_'+i+'" value="'+f2(hayFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpFarm('+i+',this.value)"></div></div></div>';
+    el.appendChild(card);
+  }
+}
+function buildHayOH(){
+  var g=document.getElementById('hay_overheadGrid');if(!g)return;g.innerHTML='';
+  for(var i=0;i<HAY_OH.length;i++){
+    var item=document.createElement('div');item.className='oh-item';
+    item.innerHTML='<div class="oh-label">'+HAY_OH[i].label+'</div><div class="oh-iw"><span class="sym">$</span><input type="number" id="hay_oh_'+i+'" value="'+f2(hayFarmOH[i])+'" min="0" max="500" step="0.01" inputmode="decimal" oninput="hayUpOH('+i+',this.value)"></div>';
+    g.appendChild(item);
+  }
+}
+function hayUpFarm(i,v){hayFarmVals[i]=parseFloat(v)||0;var d=document.getElementById('hay_f_'+i),m=document.getElementById('hay_mf_'+i);if(d&&document.activeElement!==d)d.value=v;if(m&&document.activeElement!==m)m.value=v;hayRenderDiff(i);hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();}
+function hayUpOH(i,v){hayFarmOH[i]=parseFloat(v)||0;hayUpdateTotals();hayUpdateBE();hayUpdateSens();saveUserData();}
+function hayRenderDiff(i){
+  var diff=hayFarmVals[i]-hayOmafa(i),cls,sign;
+  if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
+  else if(diff<0){cls='diff-pos';sign='-$'+Math.abs(diff).toFixed(2);}
+  else{cls='diff-neg';sign='+$'+diff.toFixed(2);}
+  var html='<span class="diff-badge">'+sign+'</span>';
+  var d=document.getElementById('hay_d_'+i);if(d){d.className='diff-cell '+cls;d.innerHTML=html;}
+  var m=document.getElementById('hay_md_'+i);if(m){m.className='diff-cell '+cls;m.innerHTML=html;}
+}
+function hayResetFarm(){
+  for(var i=0;i<HAY_CATS.length;i++){hayFarmVals[i]=hayOmafa(i);var d=document.getElementById('hay_f_'+i);if(d)d.value=f2(hayFarmVals[i]);var m=document.getElementById('hay_mf_'+i);if(m)m.value=f2(hayFarmVals[i]);hayRenderDiff(i);}
+  for(var i=0;i<HAY_OH.length;i++){hayFarmOH[i]=HAY_OH[i].val;var e=document.getElementById('hay_oh_'+i);if(e)e.value=f2(hayFarmOH[i]);}
+  hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();
+}
+function hayUpdateTotals(){
+  var ac=hayAcres(),opT=hayFarmOpTot(),ohT=hayFarmOhTot(),grT=opT+ohT;
+  var el=function(id){return document.getElementById(id);};
+  if(el('hay_totalOpWhole'))el('hay_totalOpWhole').textContent=fmtComma(opT*ac);
+  if(el('hay_totalOpPer'))el('hay_totalOpPer').textContent='$'+f2(opT)+' / acre';
+  if(el('hay_totalOhWhole'))el('hay_totalOhWhole').textContent=fmtComma(ohT*ac);
+  if(el('hay_totalOhPer'))el('hay_totalOhPer').textContent='$'+f2(ohT)+' / acre';
+  if(el('hay_totalGrWhole'))el('hay_totalGrWhole').textContent=fmtComma(grT*ac);
+  if(el('hay_totalGrPer'))el('hay_totalGrPer').textContent='$'+f2(grT)+' / acre';
+  if(el('hay_ohTotal'))el('hay_ohTotal').textContent='$'+f2(ohT);
+  var omG=hayOmafaGrand(),diff=grT-omG;
+  var dEl=el('hay_diffVal'),pEl=el('hay_diffPct');
+  if(dEl&&pEl){
+    if(Math.abs(diff)<0.005){dEl.textContent='$0.00';dEl.className='';pEl.textContent=' — on budget';}
+    else if(diff<0){dEl.textContent='-$'+Math.abs(diff).toFixed(2);dEl.className='ds-pos';pEl.textContent=' ('+(Math.abs(diff)/omG*100).toFixed(1)+'% under OMAFRA)';}
+    else{dEl.textContent='+$'+diff.toFixed(2);dEl.className='ds-neg';pEl.textContent=' ('+(diff/omG*100).toFixed(1)+'% over OMAFRA)';}
+  }
+}
+function hayDrawChart(){
+  var canvas=document.getElementById('hay_compChart');
+  if(!canvas||!canvas.getContext)return;
+  var ctx=canvas.getContext('2d');var rect=canvas.getBoundingClientRect();
+  if(rect.width<10||rect.height<10)return;
+  var dpr=window.devicePixelRatio||1;canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
+  var w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);
+  var isMob=w<500,pL=isMob?105:145,pR=16,pT=8,pB=26;
+  var cW=w-pL-pR,cH=h-pT-pB,n=HAY_CATS.length,gH=cH/n,bH=Math.min(gH*0.36,13),gap=2;
+  var mx=0;for(var i=0;i<n;i++){var o=hayOmafa(i);if(o>mx)mx=o;if(hayFarmVals[i]>mx)mx=hayFarmVals[i];}
+  mx*=1.12;var sc=cW/mx;var step=50;
+  ctx.strokeStyle='rgba(58,61,66,0.5)';ctx.lineWidth=1;ctx.fillStyle='#7a7e85';
+  ctx.font=(isMob?'9':'10')+'px Barlow,-apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+  for(var t=0;t<=mx;t+=step){var x=pL+t*sc;if(x>w-pR+1)break;ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,h-pB);ctx.stroke();ctx.fillText('$'+t,x,h-pB+4);}
+  for(var i=0;i<n;i++){
+    var y=pT+i*gH,oV=hayOmafa(i),fV=hayFarmVals[i],oW=oV*sc,fW=fV*sc;
+    var y1=y+gH/2-gap-bH,y2=y+gH/2+gap;
+    ctx.fillStyle='rgba(91,155,213,0.55)';ctx.strokeStyle='rgba(91,155,213,0.85)';ctx.lineWidth=1;
+    rRect(ctx,pL,y1,Math.max(oW,1),bH,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='rgba(212,168,50,0.55)';ctx.strokeStyle='rgba(212,168,50,0.85)';
+    rRect(ctx,pL,y2,Math.max(fW,1),bH,2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#e2e4e7';ctx.font=(isMob?'500 10px':'500 11px')+' Barlow,-apple-system,sans-serif';
+    ctx.textAlign='right';ctx.textBaseline='middle';
+    var lbl=HAY_CATS[i].label;if(isMob&&lbl.length>13)lbl=lbl.substring(0,12)+'\u2026';
+    ctx.fillText(lbl,pL-8,y+gH/2);
+  }
+}
+function hayUpdateBE(){
+  var price=parseFloat(document.getElementById('hay_priceInput').value)||0;
+  var yld=parseFloat(document.getElementById('hay_yieldInput').value)||0;
+  var el=function(id){return document.getElementById(id);};
+  var oG=hayOmafaGrand(),fG=hayFarmGrand();
+  var beO=price>0?oG/price:Infinity,beF=price>0?fG/price:Infinity;
+  if(el('hay_beOmafa'))el('hay_beOmafa').textContent=isFinite(beO)?beO.toFixed(1)+' ton':'—';
+  if(el('hay_beFarm'))el('hay_beFarm').textContent=isFinite(beF)?beF.toFixed(1)+' ton':'—';
+  var rev=price*yld,margin=rev-fG;
+  if(el('hay_beRevenue'))el('hay_beRevenue').textContent='$'+f2(rev);
+  var mEl=el('hay_beMargin'),mSub=el('hay_beStatus');
+  if(mEl&&mSub){
+    mEl.textContent=(margin>=0?'+':'')+' $'+f2(margin);
+    if(margin>=0){mEl.style.color='var(--green)';mSub.textContent='surplus — '+(margin/fG*100).toFixed(1)+'% above costs';mSub.style.color='var(--green)';}
+    else{mEl.style.color='var(--red)';var need=isFinite(beF)?beF-yld:0;mSub.textContent='shortfall — need '+need.toFixed(1)+' more ton/ac';mSub.style.color='var(--red)';}
+  }
+}
+function hayUpdateSens(){
+  var gT=hayFarmGrand(),tbl=document.getElementById('hay_sensTable');if(!tbl)return;
+  var html='<tr><th class="sens-corner">Yield \\ Price</th>';
+  for(var p=0;p<HAY_PRICES.length;p++)html+='<th class="sens-price-hdr">$'+HAY_PRICES[p]+'/ton</th>';
+  html+='</tr>';
+  for(var y=0;y<HAY_YIELDS.length;y++){
+    html+='<tr><th class="sens-yield-hdr">'+HAY_YIELDS[y]+' ton</th>';
+    for(var p=0;p<HAY_PRICES.length;p++){var margin=(HAY_PRICES[p]*HAY_YIELDS[y])-gT;var bg=sensColor(margin),tc=sensText(margin);html+='<td style="background:'+bg+';color:'+tc+'">$'+(margin>=0?'+':'')+Math.round(margin)+'</td>';}
+    html+='</tr>';
+  }
+  tbl.innerHTML=html;
+}
+function hayUpdateAll(){hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();}
+var hayInitDone=false;
+function initHay(){if(hayInitDone)return;hayInitDone=true;buildHayTable();buildHayCards();buildHayOH();for(var i=0;i<HAY_CATS.length;i++)hayRenderDiff(i);hayUpdateAll();}
+
+// ═══ UTILITY CALCULATORS ═══
+
+// --- Drying Cost Calculator ---
+function calcDrying() {
+  var harvMoist = parseFloat(document.getElementById('dry_harvMoist').value) || 25;
+  var targMoist = parseFloat(document.getElementById('dry_targMoist').value) || 15.5;
+  var propanePrice = parseFloat(document.getElementById('dry_propane').value) || 0.65;
+  var elecPrice = parseFloat(document.getElementById('dry_elec').value) || 0.13;
+  var bushels = parseFloat(document.getElementById('dry_bushels').value) || 10000;
+  var crop = document.getElementById('dry_crop').value;
+
+  var points = Math.max(0, harvMoist - targMoist);
+  // Propane usage varies by crop (L per point per bushel)
+  var propaneRate = crop === 'corn' ? 0.02 : crop === 'soybeans' ? 0.025 : 0.018;
+  // Electricity (kWh per point per bushel)
+  var elecRate = crop === 'corn' ? 0.003 : crop === 'soybeans' ? 0.004 : 0.003;
+  // Shrink: 1.183% of wet weight per point
+  var shrinkPct = 0.01183;
+
+  var propCostBu = points * propaneRate * propanePrice;
+  var elecCostBu = points * elecRate * elecPrice;
+  // Shrink value: percentage of grain lost x price equivalent
+  // Use a reference price per bushel for shrink calculation
+  var refPrice = crop === 'corn' ? 6.00 : crop === 'soybeans' ? 15.50 : 8.00;
+  var shrinkBu = points * shrinkPct * refPrice;
+  var totalBu = propCostBu + elecCostBu + shrinkBu;
+  var totalAll = totalBu * bushels;
+
+  document.getElementById('dry_points').textContent = points.toFixed(1);
+  document.getElementById('dry_propCost').textContent = '$' + propCostBu.toFixed(3);
+  document.getElementById('dry_elecCost').textContent = '$' + elecCostBu.toFixed(3);
+  document.getElementById('dry_shrink').textContent = '$' + shrinkBu.toFixed(3);
+  document.getElementById('dry_totalBu').textContent = '$' + totalBu.toFixed(2);
+  document.getElementById('dry_totalAll').textContent = '$' + totalAll.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// --- Manure Cost / Acre ---
+function calcManureCost() {
+  var rate = parseFloat(document.getElementById('mc_rate').value) || 4000;
+  var haul = parseFloat(document.getElementById('mc_haul').value) || 165;
+  var loadSize = parseFloat(document.getElementById('mc_load').value) || 4000;
+  var lph = parseFloat(document.getElementById('mc_lph').value) || 2.5;
+  var apl = parseFloat(document.getElementById('mc_apl').value) || 1.0;
+  var acres = parseFloat(document.getElementById('mc_acres').value) || 100;
+
+  var loadsPerAcre = rate / loadSize;
+  var totalLoads = loadsPerAcre * acres;
+  var totalHours = totalLoads / lph;
+  var totalCost = totalHours * haul;
+  var costPerAc = totalCost / acres;
+
+  document.getElementById('mc_loads').textContent = totalLoads.toFixed(0);
+  document.getElementById('mc_hours').textContent = totalHours.toFixed(1);
+  document.getElementById('mc_costAc').textContent = '$' + costPerAc.toFixed(2);
+  document.getElementById('mc_totalCost').textContent = '$' + totalCost.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// --- Manure Nutrient Credit ---
+var MANURE_DEFAULTS = {
+  'dairy-l':  { n: 25, p: 10, k: 22, avail: 50, unit: 'gal' },
+  'dairy-s':  { n: 9,  p: 4,  k: 10, avail: 35, unit: 'ton' },
+  'hog-l':    { n: 40, p: 22, k: 18, avail: 60, unit: 'gal' },
+  'beef-s':   { n: 11, p: 7,  k: 12, avail: 30, unit: 'ton' },
+  'poultry-s':{ n: 30, p: 30, k: 18, avail: 45, unit: 'ton' },
+  'custom':   null
+};
+function calcManureNPK() {
+  var type = document.getElementById('mn_type').value;
+  var defaults = MANURE_DEFAULTS[type];
+  if (defaults) {
+    document.getElementById('mn_n').value = defaults.n;
+    document.getElementById('mn_p').value = defaults.p;
+    document.getElementById('mn_k').value = defaults.k;
+    document.getElementById('mn_avail').value = defaults.avail;
+    document.getElementById('mn_units').value = defaults.unit;
+  }
+  var rate = parseFloat(document.getElementById('mn_rate').value) || 0;
+  var units = document.getElementById('mn_units').value;
+  var nContent = parseFloat(document.getElementById('mn_n').value) || 0;
+  var pContent = parseFloat(document.getElementById('mn_p').value) || 0;
+  var kContent = parseFloat(document.getElementById('mn_k').value) || 0;
+  var availPct = (parseFloat(document.getElementById('mn_avail').value) || 50) / 100;
+  var nPrice = parseFloat(document.getElementById('mn_prN').value) || 0;
+  var pPrice = parseFloat(document.getElementById('mn_prP').value) || 0;
+  var kPrice = parseFloat(document.getElementById('mn_prK').value) || 0;
+
+  // Convert to lb/ac: content is per 1000 gal or per ton
+  var factor = units === 'gal' ? rate / 1000 : rate;
+  var lbN = nContent * factor * availPct;
+  var lbP = pContent * factor; // P and K fully available
+  var lbK = kContent * factor;
+
+  var valN = lbN * nPrice;
+  var valP = lbP * pPrice;
+  var valK = lbK * kPrice;
+  var total = valN + valP + valK;
+
+  document.getElementById('mn_lbN').textContent = lbN.toFixed(1);
+  document.getElementById('mn_lbP').textContent = lbP.toFixed(1);
+  document.getElementById('mn_lbK').textContent = lbK.toFixed(1);
+  document.getElementById('mn_valN').textContent = '$' + valN.toFixed(2);
+  document.getElementById('mn_valP').textContent = '$' + valP.toFixed(2);
+  document.getElementById('mn_valK').textContent = '$' + valK.toFixed(2);
+  document.getElementById('mn_totalAc').textContent = '$' + total.toFixed(2);
+}
+
+// --- Machine Depreciation (Straight Line) ---
+function calcMachineSL() {
+  var price = parseFloat(document.getElementById('sl_price').value) || 0;
+  var salvage = parseFloat(document.getElementById('sl_salvage').value) || 0;
+  var life = parseFloat(document.getElementById('sl_life').value) || 1;
+  var acres = parseFloat(document.getElementById('sl_acres').value) || 1;
+
+  var depAmt = Math.max(0, price - salvage);
+  var annual = depAmt / life;
+  var perAc = annual / acres;
+
+  document.getElementById('sl_depAmt').textContent = '$' + depAmt.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  document.getElementById('sl_annual').textContent = '$' + annual.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  document.getElementById('sl_perAc').textContent = '$' + perAc.toFixed(2);
+}
+
+// --- Machine Cost $/hr ---
+function calcMachineHr() {
+  var price = parseFloat(document.getElementById('hr_price').value) || 0;
+  var salvage = parseFloat(document.getElementById('hr_salvage').value) || 0;
+  var lifeHrs = parseFloat(document.getElementById('hr_lifeHrs').value) || 1;
+  var insure = parseFloat(document.getElementById('hr_insure').value) || 0;
+  var hrsYr = parseFloat(document.getElementById('hr_hrsYr').value) || 1;
+  var fuel = parseFloat(document.getElementById('hr_fuel').value) || 0;
+  var repair = parseFloat(document.getElementById('hr_repair').value) || 0;
+  var acHr = parseFloat(document.getElementById('hr_acHr').value) || 1;
+
+  var depHr = Math.max(0, price - salvage) / lifeHrs;
+  var insHr = insure / hrsYr;
+  var totalHr = depHr + insHr + fuel + repair;
+  var totalAc = totalHr / acHr;
+
+  document.getElementById('hr_depHr').textContent = '$' + depHr.toFixed(2);
+  document.getElementById('hr_insHr').textContent = '$' + insHr.toFixed(2);
+  document.getElementById('hr_fuelHr').textContent = '$' + fuel.toFixed(2);
+  document.getElementById('hr_repHr').textContent = '$' + repair.toFixed(2);
+  document.getElementById('hr_totalHr').textContent = '$' + totalHr.toFixed(2);
+  document.getElementById('hr_totalAc').textContent = '$' + totalAc.toFixed(2);
+}
+
+// --- Land Rent Calculator ---
+function calcLandRent() {
+  var yld = parseFloat(document.getElementById('lr_yield').value) || 0;
+  var price = parseFloat(document.getElementById('lr_price').value) || 0;
+  var varCost = parseFloat(document.getElementById('lr_varCost').value) || 0;
+  var profit = parseFloat(document.getElementById('lr_profit').value) || 0;
+  var quoted = parseFloat(document.getElementById('lr_quoted').value) || 0;
+
+  var revenue = yld * price;
+  var maxRent = revenue - varCost - profit;
+  var diff = maxRent - quoted;
+
+  document.getElementById('lr_revenue').textContent = '$' + revenue.toFixed(2);
+  document.getElementById('lr_lessCost').textContent = '−$' + varCost.toFixed(2);
+  document.getElementById('lr_lessProfit').textContent = '−$' + profit.toFixed(2);
+  document.getElementById('lr_maxRent').textContent = '$' + maxRent.toFixed(2);
+  document.getElementById('lr_quotedShow').textContent = '$' + quoted.toFixed(2);
+  var diffEl = document.getElementById('lr_diff');
+  diffEl.textContent = (diff >= 0 ? '+' : '−') + '$' + Math.abs(diff).toFixed(2);
+  diffEl.style.color = diff >= 0 ? 'var(--green)' : 'var(--red, #e05a4a)';
+}
+
+// --- Seed & Fertilizer Calculator ---
+function calcSeedFert() {
+  var seedBag = parseFloat(document.getElementById('sf_seedBag').value) || 0;
+  var seedsPer = parseFloat(document.getElementById('sf_seedsPer').value) || 1;
+  var seedRate = parseFloat(document.getElementById('sf_seedRate').value) || 0;
+  var nRate = parseFloat(document.getElementById('sf_nRate').value) || 0;
+  var nPrice = parseFloat(document.getElementById('sf_nPrice').value) || 0;
+  var pRate = parseFloat(document.getElementById('sf_pRate').value) || 0;
+  var pPrice = parseFloat(document.getElementById('sf_pPrice').value) || 0;
+  var kRate = parseFloat(document.getElementById('sf_kRate').value) || 0;
+  var kPrice = parseFloat(document.getElementById('sf_kPrice').value) || 0;
+  var acres = parseFloat(document.getElementById('sf_acres').value) || 1;
+
+  var seedAc = (seedRate / seedsPer) * seedBag;
+  var nCost = nRate * nPrice;
+  var pCost = pRate * pPrice;
+  var kCost = kRate * kPrice;
+  var totalAc = seedAc + nCost + pCost + kCost;
+  var totalAll = totalAc * acres;
+
+  document.getElementById('sf_seedAc').textContent = '$' + seedAc.toFixed(2);
+  document.getElementById('sf_nCost').textContent = '$' + nCost.toFixed(2);
+  document.getElementById('sf_pCost').textContent = '$' + pCost.toFixed(2);
+  document.getElementById('sf_kCost').textContent = '$' + kCost.toFixed(2);
+  document.getElementById('sf_totalAc').textContent = '$' + totalAc.toFixed(2);
+  document.getElementById('sf_totalAll').textContent = '$' + totalAll.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
 function updateAll(){
   updateTotals();drawChart();updateBE();updateSens();
   saveUserData();
+}
+
+// ═══ TAB SYSTEM ═══
+var activeTab = 'corn';
+var allTabs = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert'];
+
+function switchTab(tabId) {
+  var panels = document.querySelectorAll('.tab-panel');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  var panel = document.getElementById('tab-' + tabId);
+  if (panel) panel.classList.add('active');
+  var btn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+  if (btn) {
+    btn.classList.add('active');
+    btn.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' });
+  }
+  activeTab = tabId;
+  if (tabId === 'corn') setTimeout(function(){ drawChart(); }, 50);
+  if (tabId === 'soybeans') { if(!soyInitDone) initSoy(); setTimeout(function(){ soyDrawChart(); }, 50); }
+  if (tabId === 'wheat') { if(!whtInitDone) initWht(); setTimeout(function(){ whtDrawChart(); }, 50); }
+  if (tabId === 'hay') { if(!hayInitDone) initHay(); setTimeout(function(){ hayDrawChart(); }, 50); }
+  // Utility tabs — run calculation on first view
+  if (tabId === 'drying') calcDrying();
+  if (tabId === 'manure-cost') calcManureCost();
+  if (tabId === 'manure-npk') calcManureNPK();
+  if (tabId === 'machine-sl') calcMachineSL();
+  if (tabId === 'machine-hr') calcMachineHr();
+  if (tabId === 'land-rent') calcLandRent();
+  if (tabId === 'seed-fert') calcSeedFert();
+}
+
+// Swipe between tabs
+(function(){
+  var startX = 0, startY = 0, swiping = false;
+  var container = null;
+  function getContainer() {
+    if (!container) container = document.getElementById('tabPanels');
+    return container;
+  }
+  document.addEventListener('touchstart', function(e) {
+    var c = getContainer();
+    if (!c || !c.contains(e.target)) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = true;
+  }, { passive: true });
+  document.addEventListener('touchend', function(e) {
+    if (!swiping) return;
+    swiping = false;
+    var dx = e.changedTouches[0].clientX - startX;
+    var dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+    var idx = allTabs.indexOf(activeTab);
+    if (dx < 0 && idx < allTabs.length - 1) switchTab(allTabs[idx + 1]);
+    else if (dx > 0 && idx > 0) switchTab(allTabs[idx - 1]);
+  }, { passive: true });
+})();
+
+// ═══ TAB MANAGEMENT (reorder/hide) ═══
+var TAB_LABELS = {
+  'corn':'Corn','soybeans':'Soybeans','wheat':'Wheat','hay':'Hay',
+  'drying':'Drying Costs','manure-cost':'Manure $/ac','manure-npk':'Manure NPK',
+  'machine-sl':'Dep (SL)','machine-hr':'Dep ($/hr)','land-rent':'Land Rent','seed-fert':'Seed & Fert'
+};
+var DEFAULT_TAB_ORDER = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert'];
+var tabOrder = DEFAULT_TAB_ORDER.slice();
+var hiddenTabs = {};
+
+function loadTabSettings() {
+  try {
+    var saved = localStorage.getItem('farmCalcTabSettings');
+    if (saved) {
+      var s = JSON.parse(saved);
+      if (s.order && Array.isArray(s.order)) {
+        // Ensure all tabs are present (in case new tabs were added)
+        var order = s.order.filter(function(t) { return DEFAULT_TAB_ORDER.indexOf(t) >= 0; });
+        DEFAULT_TAB_ORDER.forEach(function(t) { if (order.indexOf(t) < 0) order.push(t); });
+        tabOrder = order;
+      }
+      if (s.hidden && typeof s.hidden === 'object') hiddenTabs = s.hidden;
+    }
+  } catch(e) {}
+  applyTabSettings();
+}
+
+function saveTabSettings() {
+  try {
+    localStorage.setItem('farmCalcTabSettings', JSON.stringify({ order: tabOrder, hidden: hiddenTabs }));
+  } catch(e) {}
+}
+
+function applyTabSettings() {
+  var bar = document.getElementById('tabBar');
+  if (!bar) return;
+  // Re-order buttons
+  var btns = {};
+  var allBtns = bar.querySelectorAll('.tab-btn');
+  for (var i = 0; i < allBtns.length; i++) {
+    btns[allBtns[i].getAttribute('data-tab')] = allBtns[i];
+  }
+  var gear = bar.querySelector('.tab-gear');
+  tabOrder.forEach(function(tabId) {
+    var btn = btns[tabId];
+    if (btn) {
+      bar.insertBefore(btn, gear);
+      btn.style.display = hiddenTabs[tabId] ? 'none' : '';
+    }
+  });
+  // Update allTabs for swipe navigation (only visible tabs)
+  allTabs = tabOrder.filter(function(t) { return !hiddenTabs[t]; });
+  // If active tab is hidden, switch to first visible
+  if (hiddenTabs[activeTab] && allTabs.length > 0) {
+    switchTab(allTabs[0]);
+  }
+}
+
+function openTabSettings() {
+  var list = document.getElementById('tabSettingsList');
+  list.innerHTML = '';
+  tabOrder.forEach(function(tabId, idx) {
+    var item = document.createElement('div');
+    item.className = 'tm-item' + (hiddenTabs[tabId] ? ' tm-hidden' : '');
+    item.setAttribute('data-tab', tabId);
+    var isOn = !hiddenTabs[tabId];
+    item.innerHTML =
+      '<div class="tm-arrows">' +
+        '<button onclick="moveTab(\'' + tabId + '\',-1)" title="Move up">&#9650;</button>' +
+        '<button onclick="moveTab(\'' + tabId + '\',1)" title="Move down">&#9660;</button>' +
+      '</div>' +
+      '<div class="tm-label">' + (TAB_LABELS[tabId] || tabId) + '</div>' +
+      '<button class="tm-toggle' + (isOn ? ' on' : '') + '" onclick="toggleTabVis(\'' + tabId + '\',this)" title="' + (isOn ? 'Hide' : 'Show') + '"></button>';
+    list.appendChild(item);
+  });
+  document.getElementById('tabModal').classList.add('open');
+}
+
+function closeTabSettings() {
+  document.getElementById('tabModal').classList.remove('open');
+  saveTabSettings();
+  applyTabSettings();
+}
+
+function moveTab(tabId, dir) {
+  var idx = tabOrder.indexOf(tabId);
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= tabOrder.length) return;
+  tabOrder.splice(idx, 1);
+  tabOrder.splice(newIdx, 0, tabId);
+  openTabSettings(); // re-render
+}
+
+function toggleTabVis(tabId, btn) {
+  if (hiddenTabs[tabId]) {
+    delete hiddenTabs[tabId];
+    btn.classList.add('on');
+    btn.closest('.tm-item').classList.remove('tm-hidden');
+  } else {
+    // Don't allow hiding all tabs
+    var visCount = tabOrder.filter(function(t) { return !hiddenTabs[t]; }).length;
+    if (visCount <= 1) return;
+    hiddenTabs[tabId] = true;
+    btn.classList.remove('on');
+    btn.closest('.tm-item').classList.add('tm-hidden');
+  }
 }
 
 var initDone=false;
@@ -1364,7 +2963,13 @@ window.addEventListener('load',function(){
     setTimeout(function(){drawChart();},50);
   }
 });
-window.addEventListener('resize',function(){if(currentUser)drawChart();});
+window.addEventListener('resize',function(){
+  if(!currentUser)return;
+  if(activeTab==='corn')drawChart();
+  if(activeTab==='soybeans')soyDrawChart();
+  if(activeTab==='wheat')whtDrawChart();
+  if(activeTab==='hay')hayDrawChart();
+});
 
 // Service worker disabled for instant updates
 // App now requires internet connection but updates instantly

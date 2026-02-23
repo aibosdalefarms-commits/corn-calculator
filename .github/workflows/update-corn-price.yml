@@ -1,4 +1,4 @@
-name: Update Corn Price from GFO
+name: Update Crop Prices from GFO
 
 on:
   schedule:
@@ -10,116 +10,123 @@ permissions:
   contents: write
 
 jobs:
-  update-price:
+  update-prices:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch and parse GFO corn price
+      - name: Fetch GFO crop prices
         run: |
-          # Try multiple GFO URLs
-          URLS=(
-            "https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/"
-            "https://gfo.ca/average-commodity-prices/"
-            "https://gfo.ca/marketing/average-commodity-prices/"
-          )
+          # Define crops and their GFO URLs
+          declare -A CROP_URLS
+          CROP_URLS[corn]="https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/"
+          CROP_URLS[soybean]="https://gfo.ca/marketing/average-commodity-prices/historical-soybean-prices/"
+          CROP_URLS[wheat]="https://gfo.ca/marketing/average-commodity-prices/historical-wheat-prices/"
 
-          HTML=""
-          for URL in "${URLS[@]}"; do
-            echo "Trying: $URL"
-            HTTP_CODE=$(curl -s -o /tmp/gfo.html -w "%{http_code}" \
+          # Bushel conversion factors (CAD/tonne to CAD/bushel)
+          declare -A BUSHEL_FACTORS
+          BUSHEL_FACTORS[corn]=39.3679
+          BUSHEL_FACTORS[soybean]=36.7437
+          BUSHEL_FACTORS[wheat]=36.7437
+
+          for CROP in corn soybean wheat; do
+            URL="${CROP_URLS[$CROP]}"
+            FACTOR="${BUSHEL_FACTORS[$CROP]}"
+            echo "=== Fetching $CROP price from $URL ==="
+
+            # Try fetching the page
+            HTTP_CODE=$(curl -s -o /tmp/gfo_${CROP}.html -w "%{http_code}" \
               -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
               -H "Accept: text/html" \
               -L "$URL" 2>/dev/null)
-            if [ "$HTTP_CODE" = "200" ] && [ -s /tmp/gfo.html ]; then
-              HTML="/tmp/gfo.html"
-              echo "Success: $URL (HTTP $HTTP_CODE)"
-              break
-            else
-              echo "Failed: $URL (HTTP $HTTP_CODE)"
+
+            if [ "$HTTP_CODE" != "200" ] || [ ! -s /tmp/gfo_${CROP}.html ]; then
+              # Try fallback URL
+              FALLBACK="https://gfo.ca/marketing/average-commodity-prices/"
+              echo "Primary failed (HTTP $HTTP_CODE), trying fallback: $FALLBACK"
+              HTTP_CODE=$(curl -s -o /tmp/gfo_${CROP}.html -w "%{http_code}" \
+                -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+                -H "Accept: text/html" \
+                -L "$FALLBACK" 2>/dev/null)
             fi
-          done
 
-          if [ -z "$HTML" ]; then
-            echo "All GFO URLs failed"
-            exit 1
-          fi
+            if [ "$HTTP_CODE" != "200" ] || [ ! -s /tmp/gfo_${CROP}.html ]; then
+              echo "Failed to fetch $CROP page (HTTP $HTTP_CODE), skipping"
+              continue
+            fi
 
-          # Parse the corn price from HTML using Node.js
-          node -e "
-            const fs = require('fs');
-            const html = fs.readFileSync('$HTML', 'utf8');
+            echo "Fetched $CROP page (HTTP $HTTP_CODE), parsing..."
 
-            // Find table rows with 3+ cells containing month name and price
-            const months = ['January','February','March','April','May','June',
-                           'July','August','September','October','November','December'];
+            # Parse price from HTML
+            node -e "
+              const fs = require('fs');
+              const html = fs.readFileSync('/tmp/gfo_${CROP}.html', 'utf8');
+              const factor = ${FACTOR};
+              const crop = '${CROP}';
 
-            // Extract all table cell content using regex
-            const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-            const cellRegex = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+              const months = ['January','February','March','April','May','June',
+                             'July','August','September','October','November','December'];
 
-            let bestMonth = null;
-            let bestPrice = null;
-            let bestMonthIndex = -1;
-            let match;
+              const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+              let bestMonth = null;
+              let bestPrice = null;
+              let match;
 
-            while ((match = rowRegex.exec(html)) !== null) {
-              const rowHtml = match[1];
-              const cells = [];
-              let cellMatch;
-              const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-              while ((cellMatch = cellRe.exec(rowHtml)) !== null) {
-                cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
-              }
+              while ((match = rowRegex.exec(html)) !== null) {
+                const rowHtml = match[1];
+                const cells = [];
+                let cellMatch;
+                const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+                while ((cellMatch = cellRe.exec(rowHtml)) !== null) {
+                  cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
+                }
 
-              if (cells.length >= 3) {
-                const monthText = cells[0];
-                const priceText = cells[2].replace(/[\$,]/g, '');
-                const price = parseFloat(priceText);
+                if (cells.length >= 3) {
+                  const monthText = cells[0];
+                  const priceText = cells[2].replace(/[\\\$,]/g, '');
+                  const price = parseFloat(priceText);
 
-                // Check if first cell is a month name and price is reasonable
-                const monthIdx = months.findIndex(m =>
-                  monthText.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))
-                );
+                  const monthIdx = months.findIndex(m =>
+                    monthText.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))
+                  );
 
-                if (monthIdx >= 0 && !isNaN(price) && price > 50 && price < 1000) {
-                  bestMonth = monthText;
-                  bestPrice = price;
+                  if (monthIdx >= 0 && !isNaN(price) && price > 50 && price < 2000) {
+                    bestMonth = monthText;
+                    bestPrice = price;
+                  }
                 }
               }
-            }
 
-            if (!bestPrice) {
-              console.error('Could not find corn price in GFO page');
-              process.exit(1);
-            }
+              if (!bestPrice) {
+                console.error('Could not find ' + crop + ' price in GFO page');
+                process.exit(1);
+              }
 
-            // Convert CAD/tonne to CAD/bushel
-            const pricePerBushel = (bestPrice / 39.3679).toFixed(2);
+              const pricePerBushel = (bestPrice / factor).toFixed(2);
 
-            const data = {
-              price: pricePerBushel,
-              pricePerTonne: bestPrice.toFixed(2),
-              month: bestMonth,
-              currency: 'CAD',
-              source: 'Grain Farmers of Ontario',
-              sourceUrl: 'https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/',
-              updatedAt: new Date().toISOString()
-            };
+              const data = {
+                price: pricePerBushel,
+                pricePerTonne: bestPrice.toFixed(2),
+                month: bestMonth,
+                currency: 'CAD',
+                source: 'Grain Farmers of Ontario',
+                sourceUrl: '${URL}',
+                updatedAt: new Date().toISOString()
+              };
 
-            // Only write if we got a valid price
-            fs.writeFileSync('corn-price.json', JSON.stringify(data, null, 2) + '\n');
-            console.log('Updated corn price:', JSON.stringify(data));
-          "
+              fs.writeFileSync(crop + '-price.json', JSON.stringify(data, null, 2) + '\n');
+              console.log('Updated ' + crop + ' price:', JSON.stringify(data));
+            " || echo "Warning: Failed to parse $CROP price"
+          done
 
       - name: Commit and push if changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add corn-price.json
+          git add corn-price.json soybean-price.json wheat-price.json
           if git diff --staged --quiet; then
             echo "No price changes to commit"
           else
-            git commit -m "Update GFO corn price [automated]"
+            git commit -m "Update GFO crop prices [automated]"
             git push
           fi
