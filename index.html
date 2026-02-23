@@ -287,6 +287,25 @@ canvas#compChart{display:block;width:100%;height:100%}
 .util-result-row.ur-total .ur-value{font-size:17px;color:var(--green)}
 .util-section{font-size:12px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;padding:8px 0 2px;border-bottom:1px solid var(--border);margin-bottom:2px}
 .util-note{font-size:11px;color:var(--text-dim);margin-top:8px;line-height:1.4}
+/* Tab settings modal */
+.tab-gear{flex-shrink:0;padding:8px 10px;background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;border-radius:7px;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.tab-gear:hover{color:var(--accent);background:var(--surface-hi)}
+.tab-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.tab-modal-overlay.open{opacity:1;pointer-events:all}
+.tab-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(360px,90vw);max-height:80vh;overflow-y:auto;padding:16px}
+.tab-modal h3{margin:0 0 12px;font-size:16px;color:var(--text)}
+.tm-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:var(--bg)}
+.tm-item.tm-hidden{opacity:.4}
+.tm-arrows{display:flex;flex-direction:column;gap:2px}
+.tm-arrows button{padding:2px 6px;background:var(--surface-hi);border:1px solid var(--border);border-radius:4px;color:var(--text-dim);font-size:11px;cursor:pointer;line-height:1}
+.tm-arrows button:hover{color:var(--accent);border-color:var(--accent)}
+.tm-label{flex:1;font-size:13px;color:var(--text);font-weight:500}
+.tm-toggle{position:relative;width:36px;height:20px;background:var(--border);border-radius:10px;cursor:pointer;transition:background .2s;border:none}
+.tm-toggle.on{background:var(--accent)}
+.tm-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s}
+.tm-toggle.on::after{transform:translateX(16px)}
+.tm-done{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px}
+.tm-done:hover{opacity:.9}
 
 .hidden{display:none !important}
 </style>
@@ -347,6 +366,16 @@ canvas#compChart{display:block;width:100%;height:100%}
   <button class="tab-btn" data-tab="machine-hr" onclick="switchTab('machine-hr')">Dep ($/hr)</button>
   <button class="tab-btn" data-tab="land-rent" onclick="switchTab('land-rent')">Land Rent</button>
   <button class="tab-btn" data-tab="seed-fert" onclick="switchTab('seed-fert')">Seed &amp; Fert</button>
+  <button class="tab-gear" onclick="openTabSettings()" title="Tab settings">&#9881;</button>
+</div>
+
+<!-- Tab Settings Modal -->
+<div class="tab-modal-overlay" id="tabModal" onclick="if(event.target===this)closeTabSettings()">
+  <div class="tab-modal">
+    <h3>Manage Tabs</h3>
+    <div id="tabSettingsList"></div>
+    <button class="tm-done" onclick="closeTabSettings()">Done</button>
+  </div>
 </div>
 
 <!-- Tab Panels -->
@@ -1167,6 +1196,7 @@ auth.onAuthStateChanged(function(user) {
     document.getElementById('userName').textContent = username;
     document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
     
+    loadTabSettings();
     loadUserData();
     fetchCornPrice();
     fetchSoyPrice();
@@ -1232,6 +1262,8 @@ function getSaveData() {
     price: hayPrEl ? (parseFloat(hayPrEl.value) || 200) : 200,
     yield: hayYlEl ? (parseFloat(hayYlEl.value) || 3.5) : 3.5
   };
+  // Tab settings
+  data.tabSettings = { order: tabOrder, hidden: hiddenTabs };
   return data;
 }
 
@@ -1414,6 +1446,19 @@ function applyLoadedData(data) {
     if (hayAcEl) hayAcEl.value = h.acreage || 100;
     if (hayPrEl) hayPrEl.value = h.price || 200;
     if (hayYlEl) hayYlEl.value = h.yield || 3.5;
+  }
+
+  // Load tab settings from Firebase (override localStorage)
+  if (data.tabSettings) {
+    var ts = data.tabSettings;
+    if (ts.order && Array.isArray(ts.order)) {
+      var order = ts.order.filter(function(t) { return DEFAULT_TAB_ORDER.indexOf(t) >= 0; });
+      DEFAULT_TAB_ORDER.forEach(function(t) { if (order.indexOf(t) < 0) order.push(t); });
+      tabOrder = order;
+    }
+    if (ts.hidden && typeof ts.hidden === 'object') hiddenTabs = ts.hidden;
+    saveTabSettings();
+    applyTabSettings();
   }
 
   return true;
@@ -2788,6 +2833,114 @@ function switchTab(tabId) {
     else if (dx > 0 && idx > 0) switchTab(allTabs[idx - 1]);
   }, { passive: true });
 })();
+
+// ═══ TAB MANAGEMENT (reorder/hide) ═══
+var TAB_LABELS = {
+  'corn':'Corn','soybeans':'Soybeans','wheat':'Wheat','hay':'Hay',
+  'drying':'Drying Costs','manure-cost':'Manure $/ac','manure-npk':'Manure NPK',
+  'machine-sl':'Dep (SL)','machine-hr':'Dep ($/hr)','land-rent':'Land Rent','seed-fert':'Seed & Fert'
+};
+var DEFAULT_TAB_ORDER = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert'];
+var tabOrder = DEFAULT_TAB_ORDER.slice();
+var hiddenTabs = {};
+
+function loadTabSettings() {
+  try {
+    var saved = localStorage.getItem('farmCalcTabSettings');
+    if (saved) {
+      var s = JSON.parse(saved);
+      if (s.order && Array.isArray(s.order)) {
+        // Ensure all tabs are present (in case new tabs were added)
+        var order = s.order.filter(function(t) { return DEFAULT_TAB_ORDER.indexOf(t) >= 0; });
+        DEFAULT_TAB_ORDER.forEach(function(t) { if (order.indexOf(t) < 0) order.push(t); });
+        tabOrder = order;
+      }
+      if (s.hidden && typeof s.hidden === 'object') hiddenTabs = s.hidden;
+    }
+  } catch(e) {}
+  applyTabSettings();
+}
+
+function saveTabSettings() {
+  try {
+    localStorage.setItem('farmCalcTabSettings', JSON.stringify({ order: tabOrder, hidden: hiddenTabs }));
+  } catch(e) {}
+}
+
+function applyTabSettings() {
+  var bar = document.getElementById('tabBar');
+  if (!bar) return;
+  // Re-order buttons
+  var btns = {};
+  var allBtns = bar.querySelectorAll('.tab-btn');
+  for (var i = 0; i < allBtns.length; i++) {
+    btns[allBtns[i].getAttribute('data-tab')] = allBtns[i];
+  }
+  var gear = bar.querySelector('.tab-gear');
+  tabOrder.forEach(function(tabId) {
+    var btn = btns[tabId];
+    if (btn) {
+      bar.insertBefore(btn, gear);
+      btn.style.display = hiddenTabs[tabId] ? 'none' : '';
+    }
+  });
+  // Update allTabs for swipe navigation (only visible tabs)
+  allTabs = tabOrder.filter(function(t) { return !hiddenTabs[t]; });
+  // If active tab is hidden, switch to first visible
+  if (hiddenTabs[activeTab] && allTabs.length > 0) {
+    switchTab(allTabs[0]);
+  }
+}
+
+function openTabSettings() {
+  var list = document.getElementById('tabSettingsList');
+  list.innerHTML = '';
+  tabOrder.forEach(function(tabId, idx) {
+    var item = document.createElement('div');
+    item.className = 'tm-item' + (hiddenTabs[tabId] ? ' tm-hidden' : '');
+    item.setAttribute('data-tab', tabId);
+    var isOn = !hiddenTabs[tabId];
+    item.innerHTML =
+      '<div class="tm-arrows">' +
+        '<button onclick="moveTab(\'' + tabId + '\',-1)" title="Move up">&#9650;</button>' +
+        '<button onclick="moveTab(\'' + tabId + '\',1)" title="Move down">&#9660;</button>' +
+      '</div>' +
+      '<div class="tm-label">' + (TAB_LABELS[tabId] || tabId) + '</div>' +
+      '<button class="tm-toggle' + (isOn ? ' on' : '') + '" onclick="toggleTabVis(\'' + tabId + '\',this)" title="' + (isOn ? 'Hide' : 'Show') + '"></button>';
+    list.appendChild(item);
+  });
+  document.getElementById('tabModal').classList.add('open');
+}
+
+function closeTabSettings() {
+  document.getElementById('tabModal').classList.remove('open');
+  saveTabSettings();
+  applyTabSettings();
+}
+
+function moveTab(tabId, dir) {
+  var idx = tabOrder.indexOf(tabId);
+  var newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= tabOrder.length) return;
+  tabOrder.splice(idx, 1);
+  tabOrder.splice(newIdx, 0, tabId);
+  openTabSettings(); // re-render
+}
+
+function toggleTabVis(tabId, btn) {
+  if (hiddenTabs[tabId]) {
+    delete hiddenTabs[tabId];
+    btn.classList.add('on');
+    btn.closest('.tm-item').classList.remove('tm-hidden');
+  } else {
+    // Don't allow hiding all tabs
+    var visCount = tabOrder.filter(function(t) { return !hiddenTabs[t]; }).length;
+    if (visCount <= 1) return;
+    hiddenTabs[tabId] = true;
+    btn.classList.remove('on');
+    btn.closest('.tm-item').classList.add('tm-hidden');
+  }
+}
 
 var initDone=false;
 function init(){
