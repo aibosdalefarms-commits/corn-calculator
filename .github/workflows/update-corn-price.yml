@@ -29,15 +29,29 @@ jobs:
           BUSHEL_FACTORS[soybean]=36.7437
           BUSHEL_FACTORS[wheat]=36.7437
 
+          # Expected price ranges per tonne (CAD) for sanity checks
+          declare -A MIN_PRICES
+          MIN_PRICES[corn]=150
+          MIN_PRICES[soybean]=350
+          MIN_PRICES[wheat]=200
+
+          declare -A MAX_PRICES
+          MAX_PRICES[corn]=500
+          MAX_PRICES[soybean]=900
+          MAX_PRICES[wheat]=600
+
           for CROP in corn soybean wheat; do
             URL="${CROP_URLS[$CROP]}"
             FACTOR="${BUSHEL_FACTORS[$CROP]}"
+            MIN="${MIN_PRICES[$CROP]}"
+            MAX="${MAX_PRICES[$CROP]}"
             echo "=== Fetching $CROP price from $URL ==="
 
             # Try fetching the page
             HTTP_CODE=$(curl -s -o /tmp/gfo_${CROP}.html -w "%{http_code}" \
-              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-              -H "Accept: text/html" \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+              -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
+              -H "Accept-Language: en-US,en;q=0.9" \
               -L "$URL" 2>/dev/null)
 
             if [ "$HTTP_CODE" != "200" ] || [ ! -s /tmp/gfo_${CROP}.html ]; then
@@ -45,8 +59,8 @@ jobs:
               FALLBACK="https://gfo.ca/marketing/average-commodity-prices/"
               echo "Primary failed (HTTP $HTTP_CODE), trying fallback: $FALLBACK"
               HTTP_CODE=$(curl -s -o /tmp/gfo_${CROP}.html -w "%{http_code}" \
-                -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-                -H "Accept: text/html" \
+                -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+                -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
                 -L "$FALLBACK" 2>/dev/null)
             fi
 
@@ -63,17 +77,52 @@ jobs:
               const html = fs.readFileSync('/tmp/gfo_${CROP}.html', 'utf8');
               const factor = ${FACTOR};
               const crop = '${CROP}';
+              const minPrice = ${MIN};
+              const maxPrice = ${MAX};
 
               const months = ['January','February','March','April','May','June',
                              'July','August','September','October','November','December'];
 
+              // Find the tonne column index by looking at table headers
+              // GFO tables may have varying column layouts
+              const headerRe = /<thead[^>]*>([\s\S]*?)<\/thead>/gi;
+              const thRe = /<th[^>]*>([\s\S]*?)<\/th>/gi;
+              let tonneColIdx = -1;
+              let bushelColIdx = -1;
+              let headerMatch;
+
+              while ((headerMatch = headerRe.exec(html)) !== null) {
+                const headerHtml = headerMatch[1];
+                const headers = [];
+                let thMatch;
+                const thRegex = /<th[^>]*>([\s\S]*?)<\/th>/gi;
+                while ((thMatch = thRegex.exec(headerHtml)) !== null) {
+                  headers.push(thMatch[1].replace(/<[^>]*>/g, '').trim().toLowerCase());
+                }
+                for (let i = 0; i < headers.length; i++) {
+                  if (headers[i].includes('tonne') || headers[i].includes('metric')) {
+                    tonneColIdx = i;
+                  }
+                  if (headers[i].includes('bushel') || headers[i].includes('/bu')) {
+                    bushelColIdx = i;
+                  }
+                }
+                if (tonneColIdx >= 0 || bushelColIdx >= 0) break;
+              }
+
+              console.log('Column detection - tonne col:', tonneColIdx, 'bushel col:', bushelColIdx);
+
               const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
               let bestMonth = null;
               let bestPrice = null;
+              let bestBushelPrice = null;
               let match;
 
               while ((match = rowRegex.exec(html)) !== null) {
                 const rowHtml = match[1];
+                // Skip header rows
+                if (rowHtml.includes('<th')) continue;
+
                 const cells = [];
                 let cellMatch;
                 const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
@@ -81,32 +130,71 @@ jobs:
                   cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
                 }
 
-                if (cells.length >= 3) {
-                  const monthText = cells[0];
-                  const priceText = cells[2].replace(/[\\\$,]/g, '');
-                  const price = parseFloat(priceText);
+                if (cells.length < 2) continue;
 
-                  const monthIdx = months.findIndex(m =>
-                    monthText.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))
-                  );
+                const monthText = cells[0];
+                const monthIdx = months.findIndex(m =>
+                  monthText.toLowerCase().startsWith(m.toLowerCase().substring(0, 3))
+                );
 
-                  if (monthIdx >= 0 && !isNaN(price) && price > 50 && price < 2000) {
-                    bestMonth = monthText;
-                    bestPrice = price;
+                if (monthIdx < 0) continue;
+
+                // Try to get tonne price from detected column, or scan all columns
+                let tonnePrice = null;
+                let bushelPrice = null;
+
+                if (tonneColIdx >= 0 && tonneColIdx < cells.length) {
+                  const val = parseFloat(cells[tonneColIdx].replace(/[\\\$,]/g, ''));
+                  if (!isNaN(val) && val >= minPrice && val <= maxPrice) {
+                    tonnePrice = val;
                   }
+                }
+
+                if (bushelColIdx >= 0 && bushelColIdx < cells.length) {
+                  const val = parseFloat(cells[bushelColIdx].replace(/[\\\$,]/g, ''));
+                  if (!isNaN(val) && val > 1 && val < 30) {
+                    bushelPrice = val;
+                  }
+                }
+
+                // Fallback: scan all numeric columns for a value in the expected tonne range
+                if (!tonnePrice && !bushelPrice) {
+                  for (let i = 1; i < cells.length; i++) {
+                    const val = parseFloat(cells[i].replace(/[\\\$,]/g, ''));
+                    if (!isNaN(val)) {
+                      if (val >= minPrice && val <= maxPrice) {
+                        tonnePrice = val;
+                      } else if (val > 1 && val < 30 && val >= minPrice / factor * 0.8) {
+                        bushelPrice = val;
+                      }
+                    }
+                  }
+                }
+
+                if (tonnePrice || bushelPrice) {
+                  bestMonth = monthText;
+                  bestPrice = tonnePrice;
+                  bestBushelPrice = bushelPrice;
                 }
               }
 
-              if (!bestPrice) {
-                console.error('Could not find ' + crop + ' price in GFO page');
+              if (!bestPrice && !bestBushelPrice) {
+                console.error('Could not find ' + crop + ' price in GFO page (expected tonne range: ' + minPrice + '-' + maxPrice + ')');
                 process.exit(1);
               }
 
-              const pricePerBushel = (bestPrice / factor).toFixed(2);
+              let pricePerBushel, pricePerTonne;
+              if (bestPrice) {
+                pricePerBushel = (bestPrice / factor).toFixed(2);
+                pricePerTonne = bestPrice.toFixed(2);
+              } else {
+                pricePerBushel = bestBushelPrice.toFixed(2);
+                pricePerTonne = (bestBushelPrice * factor).toFixed(2);
+              }
 
               const data = {
                 price: pricePerBushel,
-                pricePerTonne: bestPrice.toFixed(2),
+                pricePerTonne: pricePerTonne,
                 month: bestMonth,
                 currency: 'CAD',
                 source: 'Grain Farmers of Ontario',
