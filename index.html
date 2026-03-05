@@ -207,8 +207,6 @@ canvas#compChart{display:block;width:100%;height:100%}
 .be-iw input:focus{border-color:var(--accent)}
 .be-iw input::-webkit-outer-spin-button,.be-iw input::-webkit-inner-spin-button{-webkit-appearance:none}
 .be-iw input[type=number]{-moz-appearance:textfield}
-.corn-penalty{font-size:11px;color:var(--red);margin-top:6px;display:none}
-.corn-penalty.show{display:block}
 .be-results{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .be-card{background:var(--surface-hi);border-radius:7px;padding:10px;text-align:center}
 .be-card .bc-lbl{font-size:9px;text-transform:uppercase;letter-spacing:0.7px;color:var(--text-dim);font-weight:600;margin-bottom:3px}
@@ -418,13 +416,6 @@ canvas#compChart{display:block;width:100%;height:100%}
         <button class="toggle-btn" id="btnNoTill" onclick="setTillage('noTill')">No-Till</button>
       </div>
     </div>
-    <div class="setting-item">
-      <label>Rotation</label>
-      <div class="checkbox-wrap">
-        <input type="checkbox" id="cornOnCorn" onchange="updateAll()">
-        <label for="cornOnCorn">Corn on Corn (8.5% yield penalty)</label>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -545,7 +536,6 @@ canvas#compChart{display:block;width:100%;height:100%}
           <span class="unit">bu/ac</span>
         </div>
       </div>
-      <div class="corn-penalty" id="cornPenNote">&#9888; Corn-on-corn: effective yield reduced to <strong id="effYield">169.3</strong> bu/ac</div>
     </div>
     <div class="be-results">
       <div class="be-card"><div class="bc-lbl">OMAFA Breakeven</div><div class="bc-val bc-omafa" id="beOmafa">—</div><div class="bc-sub">bu/acre needed</div></div>
@@ -1204,6 +1194,12 @@ auth.onAuthStateChanged(function(user) {
     
     loadTabSettings();
     loadUserData();
+    // Always fetch fresh prices on app open (clear cache)
+    try {
+      localStorage.removeItem(PRICE_CACHE_KEY);
+      localStorage.removeItem(SOY_PRICE_CACHE_KEY);
+      localStorage.removeItem(WHT_PRICE_CACHE_KEY);
+    } catch(e) {}
     fetchCornPrice();
     fetchSoyPrice();
     fetchWhtPrice();
@@ -1223,7 +1219,6 @@ function getSaveData() {
     version: 2,
     acreage: parseFloat(document.getElementById('acreageInput').value) || 100,
     mode: mode,
-    cornOnCorn: document.getElementById('cornOnCorn').checked,
     farmVals: farmVals,
     farmOH: farmOH,
     harvestMoist: parseFloat(document.getElementById('harvestMoist').value) || 25,
@@ -1376,7 +1371,6 @@ function applyLoadedData(data) {
 
   document.getElementById('acreageInput').value = data.acreage || 100;
   mode = data.mode || 'conv';
-  document.getElementById('cornOnCorn').checked = data.cornOnCorn || false;
 
   // Schema validation: ensure arrays have expected length
   if (data.farmVals && Array.isArray(data.farmVals) && data.farmVals.length === CATS.length) {
@@ -1621,7 +1615,7 @@ function showPriceSuccess(banner, price, month, ageMinutes) {
   strong.textContent = '$' + price + '/bu';
   text.appendChild(strong);
 
-  var sourceText = ' (' + month + ' GFO average';
+  var sourceText = ' (GFO ' + month + ' avg';
   if (ageMinutes > 0) {
     sourceText += ', cached ' + ageMinutes + 'm ago';
   }
@@ -1654,7 +1648,7 @@ function updatePriceBox(price, month, ageMinutes) {
   }
 
   if (priceSource) {
-    var sourceText = month + ' average from gfo.ca';
+    var sourceText = 'GFO ' + month + ' avg';
     if (ageMinutes > 0) {
       sourceText += ' (cached ' + ageMinutes + 'm ago)';
     }
@@ -1760,7 +1754,7 @@ function farmOhTot(){var t=0;for(var i=0;i<farmOH.length;i++)t+=farmOH[i];return
 function farmGrand(){return farmOpTot()+farmOhTot();}
 function omafaGrand(){return omafaOpTot()+omafaOhTot();}
 function acres(){return parseFloat(document.getElementById('acreageInput').value)||1;}
-function hasCOC(){return document.getElementById('cornOnCorn').checked;}
+function hasCOC(){return false;}
 function f2(n){return n.toFixed(2);}
 function fmtComma(n){
   var r=Math.round(n),neg=r<0;r=Math.abs(r);
@@ -1962,12 +1956,7 @@ function rRect(ctx,x,y,w,h,r){
 function updateBE(){
   var price=parseFloat(document.getElementById('priceInput').value)||0;
   var yld=parseFloat(document.getElementById('yieldInput').value)||0;
-  var coc=hasCOC();
-  var effYld=coc?yld*0.915:yld;
-
-  var pn=document.getElementById('cornPenNote');
-  if(coc){pn.className='corn-penalty show';document.getElementById('effYield').textContent=effYld.toFixed(1);}
-  else{pn.className='corn-penalty';}
+  var effYld=yld;
 
   var oG=omafaGrand(), fG=farmGrand();
   var beO=price>0?oG/price:Infinity;
@@ -2259,7 +2248,7 @@ function showSoyPrice(price,month,age){
   currentSoyFetchedPrice=price;
   var el=function(id){return document.getElementById(id);};
   if(el('soy_gfoPriceValue')){el('soy_gfoPriceValue').textContent='$'+price+'/bu';el('soy_gfoPriceValue').style.color='var(--green)';}
-  if(el('soy_gfoPriceSource')){var t=month+' average from gfo.ca';if(age>0)t+=' (cached '+age+'m ago)';el('soy_gfoPriceSource').textContent=t;}
+  if(el('soy_gfoPriceSource')){var t='GFO '+month+' avg';if(age>0)t+=' (cached '+age+'m ago)';el('soy_gfoPriceSource').textContent=t;}
   if(el('soy_gfoUseBtn')){
     var cur=parseFloat(el('soy_priceInput').value)||0;
     el('soy_gfoUseBtn').style.display=Math.abs(cur-parseFloat(price))>0.01?'inline-block':'none';
@@ -2444,7 +2433,7 @@ function fetchWhtPrice(forceRefresh){
 function showWhtPrice(price,month,age){
   currentWhtFetchedPrice=price;var el=function(id){return document.getElementById(id);};
   if(el('wht_gfoPriceValue')){el('wht_gfoPriceValue').textContent='$'+price+'/bu';el('wht_gfoPriceValue').style.color='var(--green)';}
-  if(el('wht_gfoPriceSource')){var t=month+' average from gfo.ca';if(age>0)t+=' (cached '+age+'m ago)';el('wht_gfoPriceSource').textContent=t;}
+  if(el('wht_gfoPriceSource')){var t='GFO '+month+' avg';if(age>0)t+=' (cached '+age+'m ago)';el('wht_gfoPriceSource').textContent=t;}
   if(el('wht_gfoUseBtn')){var cur=parseFloat(el('wht_priceInput').value)||0;el('wht_gfoUseBtn').style.display=Math.abs(cur-parseFloat(price))>0.01?'inline-block':'none';}
 }
 function useWhtFetchedPrice(){if(currentWhtFetchedPrice){document.getElementById('wht_priceInput').value=currentWhtFetchedPrice;whtUpdateAll();var b=document.getElementById('wht_gfoUseBtn');if(b)b.style.display='none';}}
