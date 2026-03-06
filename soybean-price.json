@@ -1,9 +1,9 @@
 {
-  "price": "14.37",
-  "pricePerTonne": "528.00",
-  "month": "February",
+  "price": "16.66",
+  "pricePerTonne": "612.33",
+  "month": "August",
   "currency": "CAD",
   "source": "Grain Farmers of Ontario",
   "sourceUrl": "https://gfo.ca/marketing/average-commodity-prices/historical-soybean-prices/",
-  "updatedAt": "2026-03-05T12:58:53.493Z"
+  "updatedAt": "2026-03-06T12:54:33.275Z"
 }
