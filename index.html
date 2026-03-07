@@ -310,6 +310,69 @@ canvas#compChart{display:block;width:100%;height:100%}
 .tm-done:hover{opacity:.9}
 
 .hidden{display:none !important}
+
+/* Field Manager */
+.field-manager{display:flex;flex-direction:column;gap:12px}
+.field-add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.field-add-row .form-group{flex:1;min-width:120px}
+.field-add-row .form-group label{font-size:10px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.8px;display:block;margin-bottom:4px}
+.field-add-row .form-group input,.field-add-row .form-group select{width:100%;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:inherit;font-size:14px;padding:9px 12px;outline:none;transition:border-color .2s}
+.field-add-row .form-group input:focus,.field-add-row .form-group select:focus{border-color:var(--accent)}
+.field-add-btn{background:linear-gradient(135deg,#daa520,#c49418);border:none;color:#141618;font-family:inherit;font-size:13px;font-weight:700;padding:9px 18px;border-radius:6px;cursor:pointer;white-space:nowrap;align-self:flex-end;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.field-add-btn:hover{opacity:.9;transform:translateY(-1px)}
+.field-list{display:flex;flex-direction:column;gap:6px}
+.field-card{background:var(--surface-hi);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;transition:all .2s}
+.field-card:hover{border-color:var(--accent)}
+.field-card-info{flex:1;min-width:0}
+.field-card-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:2px}
+.field-card-meta{font-size:11px;color:var(--text-dim);display:flex;gap:12px;flex-wrap:wrap}
+.field-card-crop{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.field-crop-corn{background:rgba(218,165,32,.15);color:#daa520}
+.field-crop-soybeans{background:rgba(67,176,106,.15);color:#43b06a}
+.field-crop-wheat{background:rgba(232,148,58,.15);color:#e8943a}
+.field-crop-hay{background:rgba(91,155,213,.15);color:#5b9bd5}
+.field-card-actions{display:flex;gap:4px;flex-shrink:0}
+.field-card-actions button{background:none;border:1px solid var(--border);color:var(--text-dim);font-size:11px;padding:5px 10px;border-radius:5px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.field-card-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.field-card-actions .field-del-btn:hover{border-color:var(--red);color:var(--red)}
+.field-history{margin-top:6px}
+.field-history-label{font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-dim);font-weight:600;margin-bottom:4px}
+.field-history-tags{display:flex;gap:4px;flex-wrap:wrap}
+.field-history-tag{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--border);color:var(--text-dim)}
+.field-edit-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.field-edit-row input,.field-edit-row select{background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:inherit;font-size:13px;padding:6px 10px;outline:none}
+.field-edit-row input:focus,.field-edit-row select:focus{border-color:var(--accent)}
+.field-edit-row input[type=number]{width:80px}
+.field-edit-row input[type=text]{flex:1;min-width:100px}
+.field-edit-row button{font-size:11px;padding:6px 12px;border-radius:5px;cursor:pointer;font-family:inherit;font-weight:600;border:none;-webkit-tap-highlight-color:transparent}
+.field-edit-save{background:var(--green);color:#141618}
+.field-edit-cancel{background:var(--surface);color:var(--text-dim);border:1px solid var(--border) !important}
+.field-empty{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
+.field-empty strong{display:block;font-size:16px;color:var(--text);margin-bottom:6px}
+
+/* Field Selector (top of crop tabs) */
+.field-selector{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.field-selector-title{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:1.4px;color:var(--text-dim);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.field-selector-title a{font-size:11px;color:var(--accent);text-decoration:none;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:500}
+.field-chips{display:flex;gap:6px;flex-wrap:wrap;min-height:32px;align-items:center}
+.field-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface-hi);color:var(--text);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.field-chip:hover{border-color:var(--accent)}
+.field-chip.selected{border-color:var(--accent);background:rgba(218,165,32,.12);color:var(--accent);font-weight:600}
+.field-chip .chip-acres{font-size:10px;color:var(--text-dim);font-weight:400}
+.field-chip.selected .chip-acres{color:rgba(218,165,32,.7)}
+.field-no-fields{font-size:12px;color:var(--text-dim);padding:4px 0}
+.field-selector-info{font-size:11px;color:var(--text-dim);margin-top:6px;display:none}
+.field-selector-info.show{display:block}
+.field-selector-info strong{color:var(--accent)}
+
+@media(max-width:640px){
+  .field-add-row{flex-direction:column}
+  .field-add-row .form-group{min-width:100%}
+  .field-card{flex-direction:column;align-items:stretch}
+  .field-card-actions{justify-content:flex-end}
+  .field-edit-row{flex-direction:column;align-items:stretch}
+  .field-edit-row input[type=number]{width:100%}
+}
 </style>
 </head>
 <body>
@@ -370,6 +433,7 @@ canvas#compChart{display:block;width:100%;height:100%}
   <button class="tab-btn" data-tab="machine-hr" onclick="switchTab('machine-hr')">Dep ($/hr)</button>
   <button class="tab-btn" data-tab="land-rent" onclick="switchTab('land-rent')">Land Rent</button>
   <button class="tab-btn" data-tab="seed-fert" onclick="switchTab('seed-fert')">Seed &amp; Fert</button>
+  <button class="tab-btn" data-tab="fields" onclick="switchTab('fields')">Fields</button>
   <button class="tab-gear" onclick="openTabSettings()" title="Tab settings">&#9881;</button>
 </div>
 
@@ -397,6 +461,12 @@ canvas#compChart{display:block;width:100%;height:100%}
 <div class="header">
   <h1>Corn</h1>
   <p>Your Farm vs OMAFRA 2025 — Southern Ontario · All changes save automatically</p>
+</div>
+
+<div class="field-selector" id="cornFieldSelector">
+  <div class="field-selector-title"><span>Select Fields</span><a onclick="switchTab('fields')">Manage Fields</a></div>
+  <div class="field-chips" id="cornFieldChips"><span class="field-no-fields">No fields assigned to corn. <a onclick="switchTab('fields')" style="color:var(--accent);cursor:pointer">Add fields</a></span></div>
+  <div class="field-selector-info" id="cornFieldInfo"></div>
 </div>
 
 <div class="panel">
@@ -567,6 +637,12 @@ canvas#compChart{display:block;width:100%;height:100%}
   <p>Your Farm vs OMAFRA 2025 — Southern Ontario · All changes save automatically</p>
 </div>
 
+<div class="field-selector" id="soyFieldSelector">
+  <div class="field-selector-title"><span>Select Fields</span><a onclick="switchTab('fields')">Manage Fields</a></div>
+  <div class="field-chips" id="soyFieldChips"><span class="field-no-fields">No fields assigned to soybeans. <a onclick="switchTab('fields')" style="color:var(--accent);cursor:pointer">Add fields</a></span></div>
+  <div class="field-selector-info" id="soyFieldInfo"></div>
+</div>
+
 <div class="panel">
   <div class="panel-title">Farm Settings</div>
   <div class="settings-row">
@@ -697,6 +773,13 @@ canvas#compChart{display:block;width:100%;height:100%}
 <!-- WHEAT TAB -->
 <div class="tab-panel" id="tab-wheat">
 <div class="header"><h1>Winter Wheat</h1><p>Your Farm vs OMAFRA 2025 — Southern Ontario · All changes save automatically</p></div>
+
+<div class="field-selector" id="whtFieldSelector">
+  <div class="field-selector-title"><span>Select Fields</span><a onclick="switchTab('fields')">Manage Fields</a></div>
+  <div class="field-chips" id="whtFieldChips"><span class="field-no-fields">No fields assigned to wheat. <a onclick="switchTab('fields')" style="color:var(--accent);cursor:pointer">Add fields</a></span></div>
+  <div class="field-selector-info" id="whtFieldInfo"></div>
+</div>
+
 <div class="panel"><div class="panel-title">Farm Settings</div><div class="settings-row">
   <div class="setting-item"><label>Total Wheat Acres</label><div class="setting-input"><input type="number" id="wht_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="whtUpdateAll()"><span class="unit">ac</span></div></div>
   <div class="setting-item"><label>Tillage System</label><div class="toggle-group"><button class="toggle-btn active t-conv" id="wht_btnConv" onclick="setWhtTillage('conv')">Conventional</button><button class="toggle-btn" id="wht_btnNoTill" onclick="setWhtTillage('noTill')">No-Till</button></div></div>
@@ -737,6 +820,13 @@ canvas#compChart{display:block;width:100%;height:100%}
 <!-- HAY TAB -->
 <div class="tab-panel" id="tab-hay">
 <div class="header"><h1>Hay</h1><p>Your Farm vs OMAFRA 2025 — Established Stand · All changes save automatically</p></div>
+
+<div class="field-selector" id="hayFieldSelector">
+  <div class="field-selector-title"><span>Select Fields</span><a onclick="switchTab('fields')">Manage Fields</a></div>
+  <div class="field-chips" id="hayFieldChips"><span class="field-no-fields">No fields assigned to hay. <a onclick="switchTab('fields')" style="color:var(--accent);cursor:pointer">Add fields</a></span></div>
+  <div class="field-selector-info" id="hayFieldInfo"></div>
+</div>
+
 <div class="panel"><div class="panel-title">Farm Settings</div><div class="settings-row">
   <div class="setting-item"><label>Total Hay Acres</label><div class="setting-input"><input type="number" id="hay_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="hayUpdateAll()"><span class="unit">ac</span></div></div>
 </div></div>
@@ -966,6 +1056,33 @@ canvas#compChart{display:block;width:100%;height:100%}
   <div class="util-note">Corn: typically 80K seeds/bag, 32–36K seeds/ac. Soybeans: typically 140K seeds/bag, 130–150K seeds/ac. Ontario 2025 avg fertilizer prices from OMAFRA Pub 60.</div>
 </div></div>
 </div><!-- tab-seed-fert -->
+
+<!-- FIELDS TAB -->
+<div class="tab-panel" id="tab-fields">
+<div class="header"><h1>Field Manager</h1><p>Add, edit, and manage your farm fields. Fields are shared across all crop tabs and their cost data is preserved when you change crops.</p></div>
+<div class="panel">
+  <div class="panel-title">Add New Field</div>
+  <div class="field-add-row">
+    <div class="form-group"><label>Field Name</label><input type="text" id="newFieldName" placeholder="e.g. North 40" maxlength="50"></div>
+    <div class="form-group"><label>Acres</label><input type="number" id="newFieldAcres" placeholder="80" min="0.1" max="100000" step="0.1" inputmode="decimal"></div>
+    <div class="form-group"><label>Current Crop</label>
+      <select id="newFieldCrop">
+        <option value="corn">Corn</option>
+        <option value="soybeans">Soybeans</option>
+        <option value="wheat">Wheat</option>
+        <option value="hay">Hay</option>
+      </select>
+    </div>
+    <button class="field-add-btn" onclick="addField()">+ Add Field</button>
+  </div>
+</div>
+<div class="panel">
+  <div class="panel-title">Your Fields</div>
+  <div class="field-list" id="fieldList">
+    <div class="field-empty"><strong>No fields yet</strong>Add your first field above to get started. Fields let you save acre sizes and costs so you don't have to re-enter them.</div>
+  </div>
+</div>
+</div><!-- tab-fields -->
 
 </div><!-- tabPanels -->
 
@@ -1265,6 +1382,10 @@ function getSaveData() {
   };
   // Tab settings
   data.tabSettings = { order: tabOrder, hidden: hiddenTabs };
+  // Field data
+  var fieldData = getFieldSaveData();
+  data.farmFields = fieldData.farmFields;
+  data.selectedFields = fieldData.selectedFields;
   return data;
 }
 
@@ -1460,6 +1581,9 @@ function applyLoadedData(data) {
     saveTabSettings();
     applyTabSettings();
   }
+
+  // Load field data
+  loadFieldData(data);
 
   return true;
 }
@@ -2773,7 +2897,7 @@ function updateAll(){
 
 // ═══ TAB SYSTEM ═══
 var activeTab = 'corn';
-var allTabs = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert'];
+var allTabs = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert','fields'];
 
 function switchTab(tabId) {
   var panels = document.querySelectorAll('.tab-panel');
@@ -2788,10 +2912,11 @@ function switchTab(tabId) {
     btn.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' });
   }
   activeTab = tabId;
-  if (tabId === 'corn') setTimeout(function(){ drawChart(); }, 50);
-  if (tabId === 'soybeans') { if(!soyInitDone) initSoy(); setTimeout(function(){ soyDrawChart(); }, 50); }
-  if (tabId === 'wheat') { if(!whtInitDone) initWht(); setTimeout(function(){ whtDrawChart(); }, 50); }
-  if (tabId === 'hay') { if(!hayInitDone) initHay(); setTimeout(function(){ hayDrawChart(); }, 50); }
+  if (tabId === 'corn') { renderFieldChips('corn'); setTimeout(function(){ drawChart(); }, 50); }
+  if (tabId === 'soybeans') { if(!soyInitDone) initSoy(); renderFieldChips('soybeans'); setTimeout(function(){ soyDrawChart(); }, 50); }
+  if (tabId === 'wheat') { if(!whtInitDone) initWht(); renderFieldChips('wheat'); setTimeout(function(){ whtDrawChart(); }, 50); }
+  if (tabId === 'hay') { if(!hayInitDone) initHay(); renderFieldChips('hay'); setTimeout(function(){ hayDrawChart(); }, 50); }
+  if (tabId === 'fields') { renderFieldList(); }
   // Utility tabs — run calculation on first view
   if (tabId === 'drying') calcDrying();
   if (tabId === 'manure-cost') calcManureCost();
@@ -2833,9 +2958,9 @@ function switchTab(tabId) {
 var TAB_LABELS = {
   'corn':'Corn','soybeans':'Soybeans','wheat':'Wheat','hay':'Hay',
   'drying':'Drying Costs','manure-cost':'Manure $/ac','manure-npk':'Manure NPK',
-  'machine-sl':'Dep (SL)','machine-hr':'Dep ($/hr)','land-rent':'Land Rent','seed-fert':'Seed & Fert'
+  'machine-sl':'Dep (SL)','machine-hr':'Dep ($/hr)','land-rent':'Land Rent','seed-fert':'Seed & Fert','fields':'Fields'
 };
-var DEFAULT_TAB_ORDER = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert'];
+var DEFAULT_TAB_ORDER = ['corn','soybeans','wheat','hay','drying','manure-cost','manure-npk','machine-sl','machine-hr','land-rent','seed-fert','fields'];
 var tabOrder = DEFAULT_TAB_ORDER.slice();
 var hiddenTabs = {};
 
@@ -2965,6 +3090,595 @@ window.addEventListener('resize',function(){
   if(activeTab==='wheat')whtDrawChart();
   if(activeTab==='hay')hayDrawChart();
 });
+
+// ═══ FIELD MANAGEMENT SYSTEM ═══
+var farmFields = {}; // { fieldId: { name, acres, currentCrop, cropData: { corn: {...}, soybeans: {...}, ... } } }
+var selectedFields = { corn: [], soybeans: [], wheat: [], hay: [] }; // selected field IDs per crop tab
+var editingFieldId = null;
+
+var CROP_LABELS = { corn: 'Corn', soybeans: 'Soybeans', wheat: 'Wheat', hay: 'Hay' };
+var CROP_KEYS = ['corn', 'soybeans', 'wheat', 'hay'];
+
+function generateFieldId() {
+  return 'f_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
+}
+
+function getDefaultCropData(crop) {
+  var data = {};
+  if (crop === 'corn') {
+    data.farmVals = CATS.map(function(c) { return c.conv; });
+    data.farmOH = OH.map(function(o) { return o.val; });
+    data.mode = 'conv';
+    data.price = 6.06;
+    data.yield = 185;
+    data.harvestMoist = 25;
+    data.targetMoist = 17;
+    data.dryRate = 13.51;
+  } else if (crop === 'soybeans') {
+    data.farmVals = SOY_CATS.map(function(c) { return c.conv; });
+    data.farmOH = SOY_OH.map(function(o) { return o.val; });
+    data.mode = 'conv';
+    data.price = 15.50;
+    data.yield = 48;
+  } else if (crop === 'wheat') {
+    data.farmVals = WHT_CATS.map(function(c) { return c.conv; });
+    data.farmOH = WHT_OH.map(function(o) { return o.val; });
+    data.mode = 'conv';
+    data.price = 8.00;
+    data.yield = 85;
+  } else if (crop === 'hay') {
+    data.farmVals = HAY_CATS.map(function(c) { return c.conv; });
+    data.farmOH = HAY_OH.map(function(o) { return o.val; });
+    data.price = 200;
+    data.yield = 3.5;
+  }
+  return data;
+}
+
+function addField() {
+  var nameEl = document.getElementById('newFieldName');
+  var acresEl = document.getElementById('newFieldAcres');
+  var cropEl = document.getElementById('newFieldCrop');
+  var name = nameEl.value.trim();
+  var acres = parseFloat(acresEl.value);
+  var crop = cropEl.value;
+
+  if (!name) { nameEl.focus(); return; }
+  if (!acres || acres <= 0) { acresEl.focus(); return; }
+
+  var fieldId = generateFieldId();
+  var field = {
+    name: name,
+    acres: acres,
+    currentCrop: crop,
+    cropData: {}
+  };
+  field.cropData[crop] = getDefaultCropData(crop);
+  farmFields[fieldId] = field;
+
+  nameEl.value = '';
+  acresEl.value = '';
+
+  renderFieldList();
+  renderFieldChips(crop);
+  saveUserData();
+}
+
+function deleteField(fieldId) {
+  if (!confirm('Delete field "' + farmFields[fieldId].name + '"? This will remove all saved cost data for this field.')) return;
+  var crop = farmFields[fieldId].currentCrop;
+  delete farmFields[fieldId];
+
+  // Remove from selections
+  CROP_KEYS.forEach(function(c) {
+    var idx = selectedFields[c].indexOf(fieldId);
+    if (idx >= 0) {
+      selectedFields[c].splice(idx, 1);
+      applyFieldSelection(c);
+    }
+  });
+
+  renderFieldList();
+  CROP_KEYS.forEach(function(c) { renderFieldChips(c); });
+  saveUserData();
+}
+
+function startEditField(fieldId) {
+  editingFieldId = fieldId;
+  renderFieldList();
+}
+
+function cancelEditField() {
+  editingFieldId = null;
+  renderFieldList();
+}
+
+function saveEditField(fieldId) {
+  var nameEl = document.getElementById('editFieldName_' + fieldId);
+  var acresEl = document.getElementById('editFieldAcres_' + fieldId);
+  var cropEl = document.getElementById('editFieldCrop_' + fieldId);
+  if (!nameEl || !acresEl || !cropEl) return;
+
+  var name = nameEl.value.trim();
+  var acres = parseFloat(acresEl.value);
+  var newCrop = cropEl.value;
+  if (!name || !acres || acres <= 0) return;
+
+  var field = farmFields[fieldId];
+  var oldCrop = field.currentCrop;
+  field.name = name;
+  field.acres = acres;
+
+  // If crop changed, save current crop data and initialize new crop if needed
+  if (newCrop !== oldCrop) {
+    // Capture current state into cropData for the old crop before switching
+    captureCurrentCropState(fieldId, oldCrop);
+    field.currentCrop = newCrop;
+    // Initialize new crop data if it doesn't exist
+    if (!field.cropData[newCrop]) {
+      field.cropData[newCrop] = getDefaultCropData(newCrop);
+    }
+    // Remove from old crop selection
+    var idx = selectedFields[oldCrop].indexOf(fieldId);
+    if (idx >= 0) {
+      selectedFields[oldCrop].splice(idx, 1);
+      applyFieldSelection(oldCrop);
+    }
+  }
+
+  editingFieldId = null;
+  renderFieldList();
+  CROP_KEYS.forEach(function(c) { renderFieldChips(c); });
+
+  // Re-apply selection if this field was selected
+  CROP_KEYS.forEach(function(c) {
+    if (selectedFields[c].indexOf(fieldId) >= 0) {
+      applyFieldSelection(c);
+    }
+  });
+
+  saveUserData();
+}
+
+function captureCurrentCropState(fieldId, crop) {
+  var field = farmFields[fieldId];
+  if (!field) return;
+  // We capture from the live state arrays only if this field is currently the sole selection
+  // Otherwise just keep whatever is in cropData
+  if (!field.cropData[crop]) {
+    field.cropData[crop] = getDefaultCropData(crop);
+  }
+}
+
+function renderFieldList() {
+  var list = document.getElementById('fieldList');
+  if (!list) return;
+
+  var ids = Object.keys(farmFields);
+  if (ids.length === 0) {
+    list.innerHTML = '<div class="field-empty"><strong>No fields yet</strong>Add your first field above to get started. Fields let you save acre sizes and costs so you don\'t have to re-enter them.</div>';
+    return;
+  }
+
+  // Sort alphabetically
+  ids.sort(function(a, b) {
+    return farmFields[a].name.localeCompare(farmFields[b].name);
+  });
+
+  list.innerHTML = '';
+  ids.forEach(function(id) {
+    var f = farmFields[id];
+    var card = document.createElement('div');
+    card.className = 'field-card';
+
+    var isEditing = editingFieldId === id;
+
+    // Crop history: list all crops that have data
+    var historyHtml = '';
+    var pastCrops = Object.keys(f.cropData || {}).filter(function(c) { return c !== f.currentCrop; });
+    if (pastCrops.length > 0) {
+      historyHtml = '<div class="field-history"><div class="field-history-label">Past crop data saved</div><div class="field-history-tags">';
+      pastCrops.forEach(function(c) {
+        historyHtml += '<span class="field-history-tag">' + (CROP_LABELS[c] || c) + '</span>';
+      });
+      historyHtml += '</div></div>';
+    }
+
+    if (isEditing) {
+      card.innerHTML =
+        '<div class="field-card-info" style="width:100%">' +
+          '<div class="field-edit-row">' +
+            '<input type="text" id="editFieldName_' + id + '" value="' + escapeAttr(f.name) + '" placeholder="Field name">' +
+            '<input type="number" id="editFieldAcres_' + id + '" value="' + f.acres + '" min="0.1" step="0.1" placeholder="Acres">' +
+            '<select id="editFieldCrop_' + id + '">' +
+              '<option value="corn"' + (f.currentCrop === 'corn' ? ' selected' : '') + '>Corn</option>' +
+              '<option value="soybeans"' + (f.currentCrop === 'soybeans' ? ' selected' : '') + '>Soybeans</option>' +
+              '<option value="wheat"' + (f.currentCrop === 'wheat' ? ' selected' : '') + '>Wheat</option>' +
+              '<option value="hay"' + (f.currentCrop === 'hay' ? ' selected' : '') + '>Hay</option>' +
+            '</select>' +
+            '<button class="field-edit-save" onclick="saveEditField(\'' + id + '\')">Save</button>' +
+            '<button class="field-edit-cancel" onclick="cancelEditField()">Cancel</button>' +
+          '</div>' +
+          historyHtml +
+        '</div>';
+    } else {
+      card.innerHTML =
+        '<div class="field-card-info">' +
+          '<div class="field-card-name">' + escapeHtml(f.name) + '</div>' +
+          '<div class="field-card-meta">' +
+            '<span>' + f.acres + ' acres</span>' +
+            '<span class="field-card-crop field-crop-' + f.currentCrop + '">' + (CROP_LABELS[f.currentCrop] || f.currentCrop) + '</span>' +
+          '</div>' +
+          historyHtml +
+        '</div>' +
+        '<div class="field-card-actions">' +
+          '<button onclick="startEditField(\'' + id + '\')">Edit</button>' +
+          '<button class="field-del-btn" onclick="deleteField(\'' + id + '\')">Delete</button>' +
+        '</div>';
+    }
+
+    list.appendChild(card);
+  });
+}
+
+function escapeHtml(s) {
+  var div = document.createElement('div');
+  div.appendChild(document.createTextNode(s));
+  return div.innerHTML;
+}
+function escapeAttr(s) {
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ═══ FIELD SELECTOR (per crop tab) ═══
+function getFieldsForCrop(crop) {
+  var result = [];
+  Object.keys(farmFields).forEach(function(id) {
+    if (farmFields[id].currentCrop === crop) {
+      result.push({ id: id, field: farmFields[id] });
+    }
+  });
+  result.sort(function(a, b) { return a.field.name.localeCompare(b.field.name); });
+  return result;
+}
+
+function renderFieldChips(crop) {
+  var chipsElId = crop === 'soybeans' ? 'soyFieldChips' : (crop === 'wheat' ? 'whtFieldChips' : (crop === 'hay' ? 'hayFieldChips' : 'cornFieldChips'));
+  var infoElId = crop === 'soybeans' ? 'soyFieldInfo' : (crop === 'wheat' ? 'whtFieldInfo' : (crop === 'hay' ? 'hayFieldInfo' : 'cornFieldInfo'));
+  var chipsEl = document.getElementById(chipsElId);
+  var infoEl = document.getElementById(infoElId);
+  if (!chipsEl) return;
+
+  var fields = getFieldsForCrop(crop);
+  if (fields.length === 0) {
+    chipsEl.innerHTML = '<span class="field-no-fields">No fields assigned to ' + (CROP_LABELS[crop] || crop).toLowerCase() + '. <a onclick="switchTab(\'fields\')" style="color:var(--accent);cursor:pointer">Add fields</a></span>';
+    if (infoEl) { infoEl.classList.remove('show'); infoEl.textContent = ''; }
+    return;
+  }
+
+  chipsEl.innerHTML = '';
+  var sel = selectedFields[crop] || [];
+
+  fields.forEach(function(item) {
+    var chip = document.createElement('button');
+    chip.className = 'field-chip' + (sel.indexOf(item.id) >= 0 ? ' selected' : '');
+    chip.innerHTML = escapeHtml(item.field.name) + ' <span class="chip-acres">' + item.field.acres + ' ac</span>';
+    chip.onclick = function() { toggleFieldSelection(crop, item.id); };
+    chipsEl.appendChild(chip);
+  });
+
+  updateFieldInfo(crop);
+}
+
+function toggleFieldSelection(crop, fieldId) {
+  var sel = selectedFields[crop];
+  var idx = sel.indexOf(fieldId);
+
+  if (idx >= 0) {
+    // Deselect — but first save current state to this field's cropData
+    saveCurrentStateToCropData(fieldId, crop);
+    sel.splice(idx, 1);
+  } else {
+    // If there are already selected fields, save their current state first
+    sel.forEach(function(fid) {
+      saveCurrentStateToCropData(fid, crop);
+    });
+    sel.push(fieldId);
+  }
+
+  applyFieldSelection(crop);
+  renderFieldChips(crop);
+  saveUserData();
+}
+
+function saveCurrentStateToCropData(fieldId, crop) {
+  var field = farmFields[fieldId];
+  if (!field) return;
+  if (!field.cropData) field.cropData = {};
+
+  // Only save if this is the sole selected field (not averaged)
+  var sel = selectedFields[crop];
+  if (sel.length !== 1 || sel[0] !== fieldId) return;
+
+  var data = {};
+  if (crop === 'corn') {
+    data.farmVals = farmVals.slice();
+    data.farmOH = farmOH.slice();
+    data.mode = mode;
+    data.price = parseFloat(document.getElementById('priceInput').value) || 6.06;
+    data.yield = parseFloat(document.getElementById('yieldInput').value) || 185;
+    data.harvestMoist = parseFloat(document.getElementById('harvestMoist').value) || 25;
+    data.targetMoist = parseFloat(document.getElementById('targetMoist').value) || 17;
+    data.dryRate = parseFloat(document.getElementById('dryRate').value) || 13.51;
+  } else if (crop === 'soybeans') {
+    data.farmVals = soyFarmVals.slice();
+    data.farmOH = soyFarmOH.slice();
+    data.mode = soyMode;
+    data.price = parseFloat(document.getElementById('soy_priceInput').value) || 15.50;
+    data.yield = parseFloat(document.getElementById('soy_yieldInput').value) || 48;
+  } else if (crop === 'wheat') {
+    data.farmVals = whtFarmVals.slice();
+    data.farmOH = whtFarmOH.slice();
+    data.mode = whtMode;
+    data.price = parseFloat(document.getElementById('wht_priceInput').value) || 8.00;
+    data.yield = parseFloat(document.getElementById('wht_yieldInput').value) || 85;
+  } else if (crop === 'hay') {
+    data.farmVals = hayFarmVals.slice();
+    data.farmOH = hayFarmOH.slice();
+    data.price = parseFloat(document.getElementById('hay_priceInput').value) || 200;
+    data.yield = parseFloat(document.getElementById('hay_yieldInput').value) || 3.5;
+  }
+  field.cropData[crop] = data;
+}
+
+function applyFieldSelection(crop) {
+  var sel = selectedFields[crop] || [];
+  if (sel.length === 0) {
+    updateFieldInfo(crop);
+    return;
+  }
+
+  // Get valid selected fields
+  var validFields = sel.filter(function(id) { return farmFields[id]; });
+  if (validFields.length === 0) {
+    selectedFields[crop] = [];
+    updateFieldInfo(crop);
+    return;
+  }
+
+  if (validFields.length === 1) {
+    // Single field: load its data directly
+    applySingleFieldData(validFields[0], crop);
+  } else {
+    // Multiple fields: average the costs, sum the acres
+    applyAveragedFieldData(validFields, crop);
+  }
+
+  updateFieldInfo(crop);
+}
+
+function applySingleFieldData(fieldId, crop) {
+  var field = farmFields[fieldId];
+  if (!field) return;
+  var data = (field.cropData && field.cropData[crop]) || getDefaultCropData(crop);
+
+  if (crop === 'corn') {
+    document.getElementById('acreageInput').value = field.acres;
+    if (data.farmVals && data.farmVals.length === CATS.length) farmVals = data.farmVals.slice();
+    if (data.farmOH && data.farmOH.length === OH.length) farmOH = data.farmOH.slice();
+    if (data.mode) { mode = data.mode; setTillageUI(mode); }
+    if (data.price) document.getElementById('priceInput').value = data.price;
+    if (data.yield) document.getElementById('yieldInput').value = data.yield;
+    if (data.harvestMoist) document.getElementById('harvestMoist').value = data.harvestMoist;
+    if (data.targetMoist) document.getElementById('targetMoist').value = data.targetMoist;
+    if (data.dryRate) document.getElementById('dryRate').value = data.dryRate;
+    buildTable(); buildCards(); buildOH();
+    for (var i = 0; i < CATS.length; i++) renderDiff(i);
+    calcDrying(); updateAll();
+  } else if (crop === 'soybeans') {
+    var acEl = document.getElementById('soy_acreageInput');
+    if (acEl) acEl.value = field.acres;
+    if (data.farmVals && data.farmVals.length === SOY_CATS.length) soyFarmVals = data.farmVals.slice();
+    if (data.farmOH && data.farmOH.length === SOY_OH.length) soyFarmOH = data.farmOH.slice();
+    if (data.mode) { soyMode = data.mode; setSoyTillageUI(soyMode); }
+    var prEl = document.getElementById('soy_priceInput');
+    var ylEl = document.getElementById('soy_yieldInput');
+    if (prEl && data.price) prEl.value = data.price;
+    if (ylEl && data.yield) ylEl.value = data.yield;
+    if (soyInitDone) { buildSoyTable(); buildSoyCards(); buildSoyOH(); for (var i = 0; i < SOY_CATS.length; i++) soyRenderDiff(i); soyUpdateAll(); }
+  } else if (crop === 'wheat') {
+    var acEl = document.getElementById('wht_acreageInput');
+    if (acEl) acEl.value = field.acres;
+    if (data.farmVals && data.farmVals.length === WHT_CATS.length) whtFarmVals = data.farmVals.slice();
+    if (data.farmOH && data.farmOH.length === WHT_OH.length) whtFarmOH = data.farmOH.slice();
+    if (data.mode) { whtMode = data.mode; setWhtTillageUI(whtMode); }
+    var prEl = document.getElementById('wht_priceInput');
+    var ylEl = document.getElementById('wht_yieldInput');
+    if (prEl && data.price) prEl.value = data.price;
+    if (ylEl && data.yield) ylEl.value = data.yield;
+    if (whtInitDone) { buildWhtTable(); buildWhtCards(); buildWhtOH(); for (var i = 0; i < WHT_CATS.length; i++) whtRenderDiff(i); whtUpdateAll(); }
+  } else if (crop === 'hay') {
+    var acEl = document.getElementById('hay_acreageInput');
+    if (acEl) acEl.value = field.acres;
+    if (data.farmVals && data.farmVals.length === HAY_CATS.length) hayFarmVals = data.farmVals.slice();
+    if (data.farmOH && data.farmOH.length === HAY_OH.length) hayFarmOH = data.farmOH.slice();
+    var prEl = document.getElementById('hay_priceInput');
+    var ylEl = document.getElementById('hay_yieldInput');
+    if (prEl && data.price) prEl.value = data.price;
+    if (ylEl && data.yield) ylEl.value = data.yield;
+    if (hayInitDone) { buildHayTable(); buildHayCards(); buildHayOH(); for (var i = 0; i < HAY_CATS.length; i++) hayRenderDiff(i); hayUpdateAll(); }
+  }
+}
+
+function applyAveragedFieldData(fieldIds, crop) {
+  var n = fieldIds.length;
+  var totalAcres = 0;
+  fieldIds.forEach(function(id) { totalAcres += farmFields[id].acres; });
+
+  if (crop === 'corn') {
+    document.getElementById('acreageInput').value = Math.round(totalAcres * 10) / 10;
+    var avgVals = new Array(CATS.length).fill(0);
+    var avgOH = new Array(OH.length).fill(0);
+    var avgPrice = 0, avgYield = 0;
+    fieldIds.forEach(function(id) {
+      var data = (farmFields[id].cropData && farmFields[id].cropData.corn) || getDefaultCropData('corn');
+      for (var i = 0; i < CATS.length; i++) avgVals[i] += (data.farmVals && data.farmVals[i]) || CATS[i].conv;
+      for (var i = 0; i < OH.length; i++) avgOH[i] += (data.farmOH && data.farmOH[i]) || OH[i].val;
+      avgPrice += data.price || 6.06;
+      avgYield += data.yield || 185;
+    });
+    farmVals = avgVals.map(function(v) { return Math.round(v / n * 100) / 100; });
+    farmOH = avgOH.map(function(v) { return Math.round(v / n * 100) / 100; });
+    document.getElementById('priceInput').value = (avgPrice / n).toFixed(2);
+    document.getElementById('yieldInput').value = Math.round(avgYield / n);
+    buildTable(); buildCards(); buildOH();
+    for (var i = 0; i < CATS.length; i++) renderDiff(i);
+    calcDrying(); updateAll();
+  } else if (crop === 'soybeans') {
+    var acEl = document.getElementById('soy_acreageInput');
+    if (acEl) acEl.value = Math.round(totalAcres * 10) / 10;
+    var avgVals = new Array(SOY_CATS.length).fill(0);
+    var avgOH = new Array(SOY_OH.length).fill(0);
+    var avgPrice = 0, avgYield = 0;
+    fieldIds.forEach(function(id) {
+      var data = (farmFields[id].cropData && farmFields[id].cropData.soybeans) || getDefaultCropData('soybeans');
+      for (var i = 0; i < SOY_CATS.length; i++) avgVals[i] += (data.farmVals && data.farmVals[i]) || SOY_CATS[i].conv;
+      for (var i = 0; i < SOY_OH.length; i++) avgOH[i] += (data.farmOH && data.farmOH[i]) || SOY_OH[i].val;
+      avgPrice += data.price || 15.50;
+      avgYield += data.yield || 48;
+    });
+    soyFarmVals = avgVals.map(function(v) { return Math.round(v / n * 100) / 100; });
+    soyFarmOH = avgOH.map(function(v) { return Math.round(v / n * 100) / 100; });
+    var prEl = document.getElementById('soy_priceInput');
+    var ylEl = document.getElementById('soy_yieldInput');
+    if (prEl) prEl.value = (avgPrice / n).toFixed(2);
+    if (ylEl) ylEl.value = Math.round(avgYield / n);
+    if (soyInitDone) { buildSoyTable(); buildSoyCards(); buildSoyOH(); for (var i = 0; i < SOY_CATS.length; i++) soyRenderDiff(i); soyUpdateAll(); }
+  } else if (crop === 'wheat') {
+    var acEl = document.getElementById('wht_acreageInput');
+    if (acEl) acEl.value = Math.round(totalAcres * 10) / 10;
+    var avgVals = new Array(WHT_CATS.length).fill(0);
+    var avgOH = new Array(WHT_OH.length).fill(0);
+    var avgPrice = 0, avgYield = 0;
+    fieldIds.forEach(function(id) {
+      var data = (farmFields[id].cropData && farmFields[id].cropData.wheat) || getDefaultCropData('wheat');
+      for (var i = 0; i < WHT_CATS.length; i++) avgVals[i] += (data.farmVals && data.farmVals[i]) || WHT_CATS[i].conv;
+      for (var i = 0; i < WHT_OH.length; i++) avgOH[i] += (data.farmOH && data.farmOH[i]) || WHT_OH[i].val;
+      avgPrice += data.price || 8.00;
+      avgYield += data.yield || 85;
+    });
+    whtFarmVals = avgVals.map(function(v) { return Math.round(v / n * 100) / 100; });
+    whtFarmOH = avgOH.map(function(v) { return Math.round(v / n * 100) / 100; });
+    var prEl = document.getElementById('wht_priceInput');
+    var ylEl = document.getElementById('wht_yieldInput');
+    if (prEl) prEl.value = (avgPrice / n).toFixed(2);
+    if (ylEl) ylEl.value = Math.round(avgYield / n);
+    if (whtInitDone) { buildWhtTable(); buildWhtCards(); buildWhtOH(); for (var i = 0; i < WHT_CATS.length; i++) whtRenderDiff(i); whtUpdateAll(); }
+  } else if (crop === 'hay') {
+    var acEl = document.getElementById('hay_acreageInput');
+    if (acEl) acEl.value = Math.round(totalAcres * 10) / 10;
+    var avgVals = new Array(HAY_CATS.length).fill(0);
+    var avgOH = new Array(HAY_OH.length).fill(0);
+    var avgPrice = 0, avgYield = 0;
+    fieldIds.forEach(function(id) {
+      var data = (farmFields[id].cropData && farmFields[id].cropData.hay) || getDefaultCropData('hay');
+      for (var i = 0; i < HAY_CATS.length; i++) avgVals[i] += (data.farmVals && data.farmVals[i]) || HAY_CATS[i].conv;
+      for (var i = 0; i < HAY_OH.length; i++) avgOH[i] += (data.farmOH && data.farmOH[i]) || HAY_OH[i].val;
+      avgPrice += data.price || 200;
+      avgYield += data.yield || 3.5;
+    });
+    hayFarmVals = avgVals.map(function(v) { return Math.round(v / n * 100) / 100; });
+    hayFarmOH = avgOH.map(function(v) { return Math.round(v / n * 100) / 100; });
+    var prEl = document.getElementById('hay_priceInput');
+    var ylEl = document.getElementById('hay_yieldInput');
+    if (prEl) prEl.value = (avgPrice / n).toFixed(2);
+    if (ylEl) ylEl.value = (avgYield / n).toFixed(1);
+    if (hayInitDone) { buildHayTable(); buildHayCards(); buildHayOH(); for (var i = 0; i < HAY_CATS.length; i++) hayRenderDiff(i); hayUpdateAll(); }
+  }
+}
+
+function updateFieldInfo(crop) {
+  var infoElId = crop === 'soybeans' ? 'soyFieldInfo' : (crop === 'wheat' ? 'whtFieldInfo' : (crop === 'hay' ? 'hayFieldInfo' : 'cornFieldInfo'));
+  var infoEl = document.getElementById(infoElId);
+  if (!infoEl) return;
+
+  var sel = selectedFields[crop] || [];
+  var valid = sel.filter(function(id) { return farmFields[id]; });
+
+  if (valid.length === 0) {
+    infoEl.classList.remove('show');
+    infoEl.textContent = '';
+    return;
+  }
+
+  if (valid.length === 1) {
+    var f = farmFields[valid[0]];
+    infoEl.innerHTML = 'Viewing: <strong>' + escapeHtml(f.name) + '</strong> (' + f.acres + ' ac) — costs auto-save to this field';
+    infoEl.classList.add('show');
+  } else {
+    var totalAc = 0;
+    var names = [];
+    valid.forEach(function(id) {
+      totalAc += farmFields[id].acres;
+      names.push(farmFields[id].name);
+    });
+    infoEl.innerHTML = '<strong>' + valid.length + ' fields selected</strong> (' + (Math.round(totalAc * 10) / 10) + ' total ac) — showing averaged costs. Select one field to edit its costs.';
+    infoEl.classList.add('show');
+  }
+}
+
+// Tillage UI helpers (don't trigger save, just update buttons)
+function setTillageUI(m) {
+  document.getElementById('btnConv').className = 'toggle-btn' + (m === 'conv' ? ' active t-conv' : '');
+  document.getElementById('btnNoTill').className = 'toggle-btn' + (m === 'noTill' ? ' active t-notill' : '');
+}
+function setSoyTillageUI(m) {
+  var bc = document.getElementById('soy_btnConv');
+  var bn = document.getElementById('soy_btnNoTill');
+  if (bc) bc.className = 'toggle-btn' + (m === 'conv' ? ' active t-conv' : '');
+  if (bn) bn.className = 'toggle-btn' + (m === 'noTill' ? ' active t-notill' : '');
+}
+function setWhtTillageUI(m) {
+  var bc = document.getElementById('wht_btnConv');
+  var bn = document.getElementById('wht_btnNoTill');
+  if (bc) bc.className = 'toggle-btn' + (m === 'conv' ? ' active t-conv' : '');
+  if (bn) bn.className = 'toggle-btn' + (m === 'noTill' ? ' active t-notill' : '');
+}
+
+// Auto-save field data when costs change (hook into existing save)
+var origSaveUserData = saveUserData;
+
+// ═══ FIELD DATA IN SAVE/LOAD ═══
+function getFieldSaveData() {
+  // Before saving, capture current state to selected fields
+  CROP_KEYS.forEach(function(crop) {
+    var sel = selectedFields[crop];
+    if (sel.length === 1 && farmFields[sel[0]]) {
+      saveCurrentStateToCropData(sel[0], crop);
+    }
+  });
+  return { farmFields: farmFields, selectedFields: selectedFields };
+}
+
+function loadFieldData(data) {
+  if (data && data.farmFields) {
+    farmFields = data.farmFields;
+    // Ensure cropData exists for all fields
+    Object.keys(farmFields).forEach(function(id) {
+      if (!farmFields[id].cropData) farmFields[id].cropData = {};
+    });
+  }
+  if (data && data.selectedFields) {
+    CROP_KEYS.forEach(function(c) {
+      if (data.selectedFields[c] && Array.isArray(data.selectedFields[c])) {
+        // Filter out fields that no longer exist
+        selectedFields[c] = data.selectedFields[c].filter(function(id) { return farmFields[id]; });
+      }
+    });
+  }
+  renderFieldList();
+  CROP_KEYS.forEach(function(c) { renderFieldChips(c); });
+}
 
 // Service worker disabled for instant updates
 // App now requires internet connection but updates instantly
