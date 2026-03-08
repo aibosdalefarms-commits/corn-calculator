@@ -105,6 +105,15 @@ body{font-family:'Barlow',-apple-system,BlinkMacSystemFont,sans-serif;background
 .cat-cell{display:flex;align-items:center;gap:8px}
 .cat-swatch{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 .cat-label{font-size:13px;font-weight:500;color:var(--text)}
+.info-btn{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--text-dim);background:transparent;color:var(--text-dim);font-size:9px;font-weight:700;font-style:italic;font-family:Georgia,serif;cursor:pointer;flex-shrink:0;padding:0;line-height:1;transition:border-color .2s,color .2s}
+.info-btn:hover{border-color:var(--omafa);color:var(--omafa)}
+.info-popup{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;background:rgba(0,0,0,.5)}
+.info-popup.active{display:flex;align-items:center;justify-content:center}
+.info-popup-content{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 20px;max-width:340px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.info-popup-title{font-size:14px;font-weight:600;color:var(--omafa);margin-bottom:8px}
+.info-popup-text{font-size:13px;line-height:1.5;color:var(--text-dim)}
+.info-popup-close{display:block;margin-top:14px;text-align:center;font-size:12px;color:var(--text-dim);cursor:pointer;padding:6px;border-radius:6px;border:1px solid var(--border);background:transparent;width:100%;transition:background .15s}
+.info-popup-close:hover{background:rgba(255,255,255,.05)}
 .val-omafa{text-align:right;font-size:13px;font-weight:500;color:var(--omafa);font-variant-numeric:tabular-nums}
 .td-input{text-align:right}
 .inp-wrap{position:relative;width:90px;margin-left:auto}
@@ -1118,15 +1127,15 @@ let isSignUpMode = false;
 
 // ═══ DATA STRUCTURE ═══
 var CATS = [
-  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914'},
-  {label:'Fertilizer (N, P, K)', conv:248.00, notill:248.00, color:'#4caf6e'},
-  {label:'Combining & Trucking', conv:111.85, notill:111.85, color:'#e8943a'},
-  {label:'Seed (Treated Hybrid)',conv:110.85, notill:110.85, color:'#7c5cbf'},
-  {label:'Drying',               conv:108.10, notill:108.10, color:'#5b9bd5', isDrying:true},
-  {label:'Tillage',              conv: 78.70, notill: 18.50, color:'#a0825a'},
-  {label:'Herbicide',            conv: 30.80, notill: 38.50, color:'#c4d42e'},
-  {label:'Planting',             conv: 28.20, notill: 28.20, color:'#f0c040'},
-  {label:'Insect. & Fungicides', conv: 35.00, notill: 35.00, color:'#e05a4a'}
+  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914', info:'OMAFRA Pub 60 (2025). Southern Ontario avg cash rent for cropland; Waterloo Region typically $275\u2013$350/acre.'},
+  {label:'Fertilizer (N, P, K)', conv:248.00, notill:248.00, color:'#4caf6e', info:'OMAFRA Pub 60 base of $210.70 adjusted +18% for 2026 input prices (urea +20%, UAN +23%, MAP +16%, potash +15%).'},
+  {label:'Combining & Trucking', conv:111.85, notill:111.85, color:'#e8943a', info:'OMAFRA Pub 60 (2025). Custom combining and trucking rates for grain corn in Ontario.'},
+  {label:'Seed (Treated Hybrid)',conv:110.85, notill:110.85, color:'#7c5cbf', info:'OMAFRA Pub 60 (2025). Treated hybrid corn seed at ~34,000 seeds/acre, based on Ontario farm input survey.'},
+  {label:'Drying',               conv:108.10, notill:108.10, color:'#5b9bd5', isDrying:true, info:'OMAFRA Pub 60 (2025). Drying from ~25% to 15.5% moisture. Cost varies with harvest moisture and fuel prices.'},
+  {label:'Tillage',              conv: 78.70, notill: 18.50, color:'#a0825a', info:'OMAFRA Pub 60 (2025). Conventional includes moldboard plow + secondary tillage. No-till is limited to coulter/planter prep.'},
+  {label:'Herbicide',            conv: 30.80, notill: 38.50, color:'#c4d42e', info:'OMAFRA Pub 60 (2025). Pre-emerge + post-emerge herbicide program. No-till higher due to burndown application.'},
+  {label:'Planting',             conv: 28.20, notill: 28.20, color:'#f0c040', info:'OMAFRA Pub 60 (2025). Custom planting rate for corn in Ontario.'},
+  {label:'Insect. & Fungicides', conv: 35.00, notill: 35.00, color:'#e05a4a', info:'Adjusted from OMAFRA base of $4/acre (no foliar spray) to include a typical strobilurin+triazole fungicide pass (~$25 product + $10 application).'}
 ];
 var OH = [
   {label:'Machinery Depreciation', val:40.00},
@@ -1138,14 +1147,14 @@ var YIELDS = [160,170,180,190,200];
 
 // ═══ SOYBEANS DATA (OMAFRA Pub 60, 2025) ═══
 var SOY_CATS = [
-  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914'},
-  {label:'Seed & Inoculant',     conv:103.50, notill:103.50, color:'#7c5cbf'},
-  {label:'Combining & Trucking', conv: 98.00, notill: 98.00, color:'#e8943a'},
-  {label:'Tillage',              conv: 62.50, notill: 15.00, color:'#a0825a'},
-  {label:'Herbicide',            conv: 48.00, notill: 56.00, color:'#c4d42e'},
-  {label:'Fertilizer (P, K)',    conv: 42.00, notill: 42.00, color:'#4caf6e'},
-  {label:'Planting',             conv: 25.50, notill: 25.50, color:'#f0c040'},
-  {label:'Insect. & Fungicides', conv: 18.00, notill: 18.00, color:'#e05a4a'}
+  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914', info:'OMAFRA Pub 60 (2025). Southern Ontario avg cash rent for cropland; same baseline as corn.'},
+  {label:'Seed & Inoculant',     conv:103.50, notill:103.50, color:'#7c5cbf', info:'OMAFRA Pub 60 (2025). Treated soybean seed + granular inoculant, based on Ontario farm input survey.'},
+  {label:'Combining & Trucking', conv: 98.00, notill: 98.00, color:'#e8943a', info:'OMAFRA Pub 60 (2025). Custom combining and trucking rates for soybeans in Ontario.'},
+  {label:'Tillage',              conv: 62.50, notill: 15.00, color:'#a0825a', info:'OMAFRA Pub 60 (2025). Conventional includes primary + secondary tillage. No-till is minimal prep only.'},
+  {label:'Herbicide',            conv: 48.00, notill: 56.00, color:'#c4d42e', info:'OMAFRA Pub 60 (2025). Pre + post-emerge program. No-till higher due to burndown application.'},
+  {label:'Fertilizer (P, K)',    conv: 42.00, notill: 42.00, color:'#4caf6e', info:'OMAFRA Pub 60 (2025). Phosphorus and potash only; soybeans fix their own nitrogen.'},
+  {label:'Planting',             conv: 25.50, notill: 25.50, color:'#f0c040', info:'OMAFRA Pub 60 (2025). Custom planting rate for soybeans in Ontario.'},
+  {label:'Insect. & Fungicides', conv: 18.00, notill: 18.00, color:'#e05a4a', info:'OMAFRA Pub 60 (2025). Includes aphid insecticide and/or foliar fungicide application when warranted.'}
 ];
 var SOY_OH = [
   {label:'Machinery Depreciation', val:35.00},
@@ -1157,15 +1166,15 @@ var SOY_YIELDS = [40,45,50,55,60];
 
 // ═══ WHEAT DATA (OMAFRA Pub 60, 2025) ═══
 var WHT_CATS = [
-  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914'},
-  {label:'Fertilizer (N, P, K)', conv:158.00, notill:158.00, color:'#4caf6e'},
-  {label:'Combining & Trucking', conv: 85.00, notill: 85.00, color:'#e8943a'},
-  {label:'Seed',                 conv: 56.00, notill: 56.00, color:'#7c5cbf'},
-  {label:'Tillage',              conv: 55.00, notill: 15.00, color:'#a0825a'},
-  {label:'Herbicide',            conv: 32.00, notill: 40.00, color:'#c4d42e'},
-  {label:'Fungicides',           conv: 30.00, notill: 30.00, color:'#e05a4a'},
-  {label:'Planting',             conv: 22.00, notill: 22.00, color:'#f0c040'},
-  {label:'Insecticides',         conv:  4.00, notill:  4.00, color:'#d4648a'}
+  {label:'Land Rent',             conv:337.50, notill:337.50, color:'#8B6914', info:'OMAFRA Pub 60 (2025). Southern Ontario avg cash rent for cropland.'},
+  {label:'Fertilizer (N, P, K)', conv:158.00, notill:158.00, color:'#4caf6e', info:'OMAFRA Pub 60 (2025). Split N application (fall + spring top-dress) plus P and K for winter wheat.'},
+  {label:'Combining & Trucking', conv: 85.00, notill: 85.00, color:'#e8943a', info:'OMAFRA Pub 60 (2025). Custom combining and trucking rates for wheat in Ontario.'},
+  {label:'Seed',                 conv: 56.00, notill: 56.00, color:'#7c5cbf', info:'OMAFRA Pub 60 (2025). Certified winter wheat seed at recommended seeding rate.'},
+  {label:'Tillage',              conv: 55.00, notill: 15.00, color:'#a0825a', info:'OMAFRA Pub 60 (2025). Conventional includes primary + secondary tillage after previous crop.'},
+  {label:'Herbicide',            conv: 32.00, notill: 40.00, color:'#c4d42e', info:'OMAFRA Pub 60 (2025). Spring broadleaf herbicide application. No-till includes burndown.'},
+  {label:'Fungicides',           conv: 30.00, notill: 30.00, color:'#e05a4a', info:'OMAFRA Pub 60 (2025). Typically a T3 (head) fungicide application at flowering for Fusarium/DON control.'},
+  {label:'Planting',             conv: 22.00, notill: 22.00, color:'#f0c040', info:'OMAFRA Pub 60 (2025). Custom planting/drilling rate for winter wheat in Ontario.'},
+  {label:'Insecticides',         conv:  4.00, notill:  4.00, color:'#d4648a', info:'OMAFRA Pub 60 (2025). Minimal insecticide use; only applied when pest thresholds are reached.'}
 ];
 var WHT_OH = [
   {label:'Machinery Depreciation', val:36.00},
@@ -1177,14 +1186,14 @@ var WHT_YIELDS = [75,80,85,90,95];
 
 // ═══ HAY DATA (OMAFRA Pub 60, 2025 — Established Stand) ═══
 var HAY_CATS = [
-  {label:'Land Rent',             conv:275.00, notill:275.00, color:'#8B6914'},
-  {label:'Fertilizer',           conv: 92.00, notill: 92.00, color:'#4caf6e'},
-  {label:'Baling',               conv: 52.00, notill: 52.00, color:'#e8943a'},
-  {label:'Mowing & Conditioning',conv: 42.00, notill: 42.00, color:'#5b9bd5'},
-  {label:'Hauling & Storage',    conv: 28.00, notill: 28.00, color:'#7c5cbf'},
-  {label:'Raking / Tedding',     conv: 18.00, notill: 18.00, color:'#f0c040'},
-  {label:'Seed (Amortized)',     conv: 18.00, notill: 18.00, color:'#c4d42e'},
-  {label:'Herbicide',            conv:  8.00, notill:  8.00, color:'#a0825a'}
+  {label:'Land Rent',             conv:275.00, notill:275.00, color:'#8B6914', info:'OMAFRA Pub 60 (2025). Hay land rents lower than row crop land in southern Ontario.'},
+  {label:'Fertilizer',           conv: 92.00, notill: 92.00, color:'#4caf6e', info:'OMAFRA Pub 60 (2025). Annual top-dress of N, P, K for established hay stand.'},
+  {label:'Baling',               conv: 52.00, notill: 52.00, color:'#e8943a', info:'OMAFRA Pub 60 (2025). Custom baling rate, large round or square bales.'},
+  {label:'Mowing & Conditioning',conv: 42.00, notill: 42.00, color:'#5b9bd5', info:'OMAFRA Pub 60 (2025). Custom mower-conditioner rate per cutting.'},
+  {label:'Hauling & Storage',    conv: 28.00, notill: 28.00, color:'#7c5cbf', info:'OMAFRA Pub 60 (2025). Moving bales from field to storage facility.'},
+  {label:'Raking / Tedding',     conv: 18.00, notill: 18.00, color:'#f0c040', info:'OMAFRA Pub 60 (2025). Custom raking or tedding to speed dry-down before baling.'},
+  {label:'Seed (Amortized)',     conv: 18.00, notill: 18.00, color:'#c4d42e', info:'OMAFRA Pub 60 (2025). Establishment seed cost spread over expected stand life (4\u20135 years).'},
+  {label:'Herbicide',            conv:  8.00, notill:  8.00, color:'#a0825a', info:'OMAFRA Pub 60 (2025). Minimal herbicide use in established hay stands.'}
 ];
 var HAY_OH = [
   {label:'Machinery Depreciation', val:28.00},
@@ -1890,11 +1899,33 @@ function fmtComma(n){
   return (neg?'-':'')+'$'+out;
 }
 
+// ═══ INFO POPUP ═══
+var _infoPopup=null;
+function ensureInfoPopup(){
+  if(_infoPopup)return _infoPopup;
+  var d=document.createElement('div');d.className='info-popup';
+  d.innerHTML='<div class="info-popup-content"><div class="info-popup-title" id="infoPopTitle"></div><div class="info-popup-text" id="infoPopText"></div><button class="info-popup-close" id="infoPopClose">Close</button></div>';
+  document.body.appendChild(d);
+  d.addEventListener('click',function(e){if(e.target===d)d.classList.remove('active');});
+  d.querySelector('#infoPopClose').addEventListener('click',function(){d.classList.remove('active');});
+  _infoPopup=d;return d;
+}
+function showInfo(title,text){
+  var p=ensureInfoPopup();
+  p.querySelector('#infoPopTitle').textContent=title;
+  p.querySelector('#infoPopText').textContent=text;
+  p.classList.add('active');
+}
+function infoBtnHtml(label,info){
+  if(!info)return '';
+  return ' <button class="info-btn" onclick="showInfo(\''+label.replace(/'/g,"\\'")+'\',\''+info.replace(/'/g,"\\'")+'\')">i</button>';
+}
+
 function buildTable(){
   var tb=document.getElementById('tableBody');tb.innerHTML='';
   for(var i=0;i<CATS.length;i++){
     var c=CATS[i],tr=document.createElement('tr');
-    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div></td>'+
       '<td class="val-omafa" id="om_'+i+'">$'+f2(omafa(i))+'</td>'+
       '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span>'+
         '<input type="number" id="f_'+i+'" value="'+f2(farmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="upFarm('+i+',this.value)">'+
@@ -1908,7 +1939,7 @@ function buildCards(){
   var el=document.getElementById('mobileCards');el.innerHTML='';
   for(var i=0;i<CATS.length;i++){
     var c=CATS[i],card=document.createElement('div');card.className='m-card';
-    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="md_'+i+'"></div></div>'+
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div><div class="diff-cell" id="md_'+i+'"></div></div>'+
       '<div class="m-card-row">'+
         '<div class="m-col omafa-col"><div class="m-col-label">OMAFA</div><div class="m-omafa-val" id="mom_'+i+'">$'+f2(omafa(i))+'</div></div>'+
         '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span>'+
@@ -2146,7 +2177,7 @@ function buildSoyTable(){
   var tb=document.getElementById('soy_tableBody');if(!tb)return;tb.innerHTML='';
   for(var i=0;i<SOY_CATS.length;i++){
     var c=SOY_CATS[i],tr=document.createElement('tr');
-    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div></td>'+
       '<td class="val-omafa" id="soy_om_'+i+'">$'+f2(soyOmafa(i))+'</td>'+
       '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span>'+
         '<input type="number" id="soy_f_'+i+'" value="'+f2(soyFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="soyUpFarm('+i+',this.value)">'+
@@ -2159,7 +2190,7 @@ function buildSoyCards(){
   var el=document.getElementById('soy_mobileCards');if(!el)return;el.innerHTML='';
   for(var i=0;i<SOY_CATS.length;i++){
     var c=SOY_CATS[i],card=document.createElement('div');card.className='m-card';
-    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="soy_md_'+i+'"></div></div>'+
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div><div class="diff-cell" id="soy_md_'+i+'"></div></div>'+
       '<div class="m-card-row">'+
         '<div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="soy_mom_'+i+'">$'+f2(soyOmafa(i))+'</div></div>'+
         '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span>'+
@@ -2396,7 +2427,7 @@ function buildWhtTable(){
   var tb=document.getElementById('wht_tableBody');if(!tb)return;tb.innerHTML='';
   for(var i=0;i<WHT_CATS.length;i++){
     var c=WHT_CATS[i],tr=document.createElement('tr');
-    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div></td>'+
       '<td class="val-omafa" id="wht_om_'+i+'">$'+f2(whtOmafa(i))+'</td>'+
       '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="wht_f_'+i+'" value="'+f2(whtFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="whtUpFarm('+i+',this.value)"></div></td>'+
       '<td class="diff-cell" id="wht_d_'+i+'"></td>';
@@ -2407,7 +2438,7 @@ function buildWhtCards(){
   var el=document.getElementById('wht_mobileCards');if(!el)return;el.innerHTML='';
   for(var i=0;i<WHT_CATS.length;i++){
     var c=WHT_CATS[i],card=document.createElement('div');card.className='m-card';
-    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="wht_md_'+i+'"></div></div>'+
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div><div class="diff-cell" id="wht_md_'+i+'"></div></div>'+
       '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="wht_mom_'+i+'">$'+f2(whtOmafa(i))+'</div></div>'+
       '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="wht_mf_'+i+'" value="'+f2(whtFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="whtUpFarm('+i+',this.value)"></div></div></div>';
     el.appendChild(card);
@@ -2575,7 +2606,7 @@ function buildHayTable(){
   var tb=document.getElementById('hay_tableBody');if(!tb)return;tb.innerHTML='';
   for(var i=0;i<HAY_CATS.length;i++){
     var c=HAY_CATS[i],tr=document.createElement('tr');
-    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div></td>'+
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div></td>'+
       '<td class="val-omafa" id="hay_om_'+i+'">$'+f2(hayOmafa(i))+'</td>'+
       '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="hay_f_'+i+'" value="'+f2(hayFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpFarm('+i+',this.value)"></div></td>'+
       '<td class="diff-cell" id="hay_d_'+i+'"></td>';
@@ -2586,7 +2617,7 @@ function buildHayCards(){
   var el=document.getElementById('hay_mobileCards');if(!el)return;el.innerHTML='';
   for(var i=0;i<HAY_CATS.length;i++){
     var c=HAY_CATS[i],card=document.createElement('div');card.className='m-card';
-    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span></div><div class="diff-cell" id="hay_md_'+i+'"></div></div>'+
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div><div class="diff-cell" id="hay_md_'+i+'"></div></div>'+
       '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="hay_mom_'+i+'">$'+f2(hayOmafa(i))+'</div></div>'+
       '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="hay_mf_'+i+'" value="'+f2(hayFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpFarm('+i+',this.value)"></div></div></div>';
     el.appendChild(card);
