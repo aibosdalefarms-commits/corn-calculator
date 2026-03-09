@@ -382,6 +382,35 @@ canvas#compChart{display:block;width:100%;height:100%}
   .field-edit-row{flex-direction:column;align-items:stretch}
   .field-edit-row input[type=number]{width:100%}
 }
+
+/* Export Button & Modal */
+.export-bar{margin-top:16px;text-align:center}
+.export-btn{background:linear-gradient(135deg,rgba(91,155,213,.15),rgba(91,155,213,.05));border:1px solid rgba(91,155,213,.3);color:var(--omafa);font-family:inherit;font-size:15px;font-weight:600;padding:12px 28px;border-radius:8px;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.export-btn:hover{background:rgba(91,155,213,.2);border-color:var(--omafa);transform:translateY(-1px);box-shadow:0 4px 12px rgba(91,155,213,.15)}
+.export-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.export-overlay.open{opacity:1;pointer-events:all}
+.export-modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;width:min(440px,92vw);max-height:85vh;overflow-y:auto;padding:24px;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+.export-modal h3{font-family:'Fraunces',Georgia,serif;font-size:20px;color:var(--accent);margin:0 0 6px}
+.export-modal .em-sub{font-size:14px;color:var(--text-dim);margin-bottom:18px}
+.em-section{margin-bottom:20px}
+.em-section-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--omafa);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.em-option{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-hi);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.em-option:hover{border-color:var(--accent)}
+.em-option input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.em-option-label{font-size:15px;color:var(--text);font-weight:500}
+.em-option-meta{font-size:12px;color:var(--text-dim)}
+.em-actions{display:flex;gap:8px;margin-top:16px}
+.em-actions button{flex:1;padding:12px;border-radius:8px;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.em-export-btn{background:linear-gradient(135deg,#daa520,#c49418);border:none;color:#141618}
+.em-export-btn:hover{opacity:.9}
+.em-export-btn:disabled{opacity:.4;cursor:not-allowed}
+.em-cancel-btn{background:none;border:1px solid var(--border);color:var(--text-dim)}
+.em-cancel-btn:hover{border-color:var(--text);color:var(--text)}
+.em-tab-bar{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);margin-bottom:16px}
+.em-tab{flex:1;padding:10px;background:none;border:none;color:var(--text-dim);font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.em-tab:hover{color:var(--text)}
+.em-tab.active{background:var(--surface-hi);color:var(--accent);font-weight:600}
+.em-none{font-size:14px;color:var(--text-dim);text-align:center;padding:16px}
 </style>
 </head>
 <body>
@@ -636,6 +665,7 @@ canvas#compChart{display:block;width:100%;height:100%}
   <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> ·
   Land rent: 2024 U of Guelph Farmland Survey · No-till values based on OMAFA no-till budget · Overhead = depreciation + interest + other fixed costs
 </div>
+<div class="export-bar"><button class="export-btn" onclick="openExportModal('corn')">Export PDF</button></div>
 </div><!-- tab-corn -->
 
 <!-- SOYBEANS TAB -->
@@ -776,7 +806,7 @@ canvas#compChart{display:block;width:100%;height:100%}
   <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> ·
   Land rent: 2024 U of Guelph Farmland Survey · No-till values based on OMAFRA no-till budget
 </div>
-
+<div class="export-bar"><button class="export-btn" onclick="openExportModal('soybeans')">Export PDF</button></div>
 </div><!-- tab-soybeans -->
 
 <!-- WHEAT TAB -->
@@ -824,6 +854,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 </div>
 <div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="wht_sensTable"></table></div><div class="sens-note">Net margin at different price and yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
 <div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Land rent: 2024 U of Guelph Farmland Survey</div>
+<div class="export-bar"><button class="export-btn" onclick="openExportModal('wheat')">Export PDF</button></div>
 </div><!-- tab-wheat -->
 
 <!-- HAY TAB -->
@@ -869,6 +900,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 </div>
 <div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="hay_sensTable"></table></div><div class="sens-note">Net margin at different price and yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
 <div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Established stand (3+ year) · Enter hay price manually — no reliable local API source</div>
+<div class="export-bar"><button class="export-btn" onclick="openExportModal('hay')">Export PDF</button></div>
 </div><!-- tab-hay -->
 
 <!-- DRYING COSTS TAB -->
@@ -1102,6 +1134,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 
 <script>
 // ═══ FIREBASE CONFIGURATION ═══
@@ -3722,6 +3755,402 @@ if('serviceWorker' in navigator){
   });
 }
 
+// ═══ EXPORT PDF ═══
+var exportCrop = '';
+var exportMode = 'field'; // 'field' or 'crop'
+
+function openExportModal(crop) {
+  exportCrop = crop;
+  exportMode = 'field';
+  var overlay = document.getElementById('exportOverlay');
+  overlay.classList.add('open');
+  buildExportModal();
+}
+
+function closeExportModal() {
+  document.getElementById('exportOverlay').classList.remove('open');
+}
+
+function setExportMode(m) {
+  exportMode = m;
+  buildExportModal();
+}
+
+function buildExportModal() {
+  var cropLabel = CROP_LABELS[exportCrop] || exportCrop;
+  document.getElementById('emTitle').textContent = 'Export ' + cropLabel + ' PDF';
+
+  // Tab highlight
+  var tabs = document.querySelectorAll('.em-tab');
+  tabs.forEach(function(t) { t.classList.toggle('active', t.dataset.mode === exportMode); });
+
+  var container = document.getElementById('emFieldList');
+  container.innerHTML = '';
+
+  // Get fields for this crop
+  var fields = [];
+  Object.keys(farmFields).forEach(function(id) {
+    var f = farmFields[id];
+    if (f.currentCrop === exportCrop || (f.cropData && f.cropData[exportCrop])) {
+      fields.push({ id: id, name: f.name, acres: f.acres, hasCropData: !!(f.cropData && f.cropData[exportCrop]) });
+    }
+  });
+
+  if (fields.length === 0) {
+    container.innerHTML = '<div class="em-none">No fields found for ' + cropLabel + '.<br>Add fields in the Fields tab first.</div>';
+    document.getElementById('emExportBtn').disabled = true;
+    return;
+  }
+
+  if (exportMode === 'field') {
+    container.innerHTML = '<div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">Select fields to export individually (each gets its own page):</div>';
+  } else {
+    container.innerHTML = '<div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">Select fields to include in the ' + cropLabel + ' crop average:</div>';
+  }
+
+  fields.forEach(function(f) {
+    var div = document.createElement('label');
+    div.className = 'em-option';
+    div.innerHTML = '<input type="checkbox" class="em-field-cb" value="' + f.id + '" checked>' +
+      '<div><div class="em-option-label">' + f.name + '</div>' +
+      '<div class="em-option-meta">' + f.acres + ' acres</div></div>';
+    container.appendChild(div);
+  });
+
+  document.getElementById('emExportBtn').disabled = false;
+}
+
+function getCheckedExportFields() {
+  var cbs = document.querySelectorAll('.em-field-cb:checked');
+  var ids = [];
+  cbs.forEach(function(cb) { ids.push(cb.value); });
+  return ids;
+}
+
+function doExport() {
+  var fieldIds = getCheckedExportFields();
+  if (fieldIds.length === 0) return;
+
+  if (exportMode === 'field') {
+    exportFieldPDF(exportCrop, fieldIds);
+  } else {
+    exportCropSummaryPDF(exportCrop, fieldIds);
+  }
+  closeExportModal();
+}
+
+function getCropConfig(crop) {
+  if (crop === 'corn') return { cats: CATS, oh: OH, unit: 'bu', unitLabel: 'bu/acre', priceLabel: '$/bu' };
+  if (crop === 'soybeans') return { cats: SOY_CATS, oh: SOY_OH, unit: 'bu', unitLabel: 'bu/acre', priceLabel: '$/bu' };
+  if (crop === 'wheat') return { cats: WHT_CATS, oh: WHT_OH, unit: 'bu', unitLabel: 'bu/acre', priceLabel: '$/bu' };
+  if (crop === 'hay') return { cats: HAY_CATS, oh: HAY_OH, unit: 'ton', unitLabel: 'ton/acre', priceLabel: '$/ton' };
+  return null;
+}
+
+function getFieldCropData(fieldId, crop) {
+  var field = farmFields[fieldId];
+  if (!field) return null;
+  return (field.cropData && field.cropData[crop]) || getDefaultCropData(crop);
+}
+
+function getFarmName() {
+  var el = document.getElementById('userName');
+  return el ? el.textContent : 'Farm';
+}
+
+function pdfHeader(doc, farmName, subtitle) {
+  var pw = doc.internal.pageSize.getWidth();
+  // Gold bar top
+  doc.setFillColor(218, 165, 32);
+  doc.rect(0, 0, pw, 8, 'F');
+  // Farm name
+  doc.setFontSize(26);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(40, 40, 40);
+  doc.text(farmName, 20, 28);
+  // Subtitle
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(120, 120, 120);
+  doc.text(subtitle, 20, 38);
+  // Date
+  doc.setFontSize(11);
+  doc.text('Growing Season ' + new Date().getFullYear(), pw - 20, 38, { align: 'right' });
+  // Divider
+  doc.setDrawColor(218, 165, 32);
+  doc.setLineWidth(0.5);
+  doc.line(20, 44, pw - 20, 44);
+  return 52;
+}
+
+function pdfSectionTitle(doc, y, title) {
+  var pw = doc.internal.pageSize.getWidth();
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(91, 155, 213);
+  doc.text(title, 20, y);
+  doc.setDrawColor(91, 155, 213);
+  doc.setLineWidth(0.3);
+  doc.line(20, y + 2, pw - 20, y + 2);
+  return y + 10;
+}
+
+function pdfCostTable(doc, y, cats, vals, oh, ohVals, showOmafa) {
+  var pw = doc.internal.pageSize.getWidth();
+  var colLabel = 20;
+  var colVal = showOmafa ? pw / 2 + 10 : pw - 60;
+  var colOmafa = showOmafa ? pw - 60 : 0;
+
+  // Header row
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(80, 80, 80);
+  doc.text('Category', colLabel, y);
+  doc.text(showOmafa ? 'Your Farm' : '$/acre', colVal, y, { align: 'right' });
+  if (showOmafa) {
+    doc.setTextColor(91, 155, 213);
+    doc.text('OMAFRA', colOmafa, y, { align: 'right' });
+  }
+  y += 3;
+  doc.setDrawColor(180, 180, 180);
+  doc.setLineWidth(0.2);
+  doc.line(colLabel, y, pw - 20, y);
+  y += 7;
+
+  var opTotal = 0, omafaOpTotal = 0;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(13);
+
+  for (var i = 0; i < cats.length; i++) {
+    if (y > 265) { doc.addPage(); y = 20; }
+    doc.setTextColor(60, 60, 60);
+    doc.text(cats[i].label, colLabel, y);
+    doc.setTextColor(40, 40, 40);
+    doc.text('$' + vals[i].toFixed(2), colVal, y, { align: 'right' });
+    opTotal += vals[i];
+    if (showOmafa) {
+      var omVal = cats[i].conv;
+      omafaOpTotal += omVal;
+      doc.setTextColor(91, 155, 213);
+      doc.text('$' + omVal.toFixed(2), colOmafa, y, { align: 'right' });
+    }
+    y += 8;
+  }
+
+  // Subtotal line
+  doc.setDrawColor(180, 180, 180);
+  doc.line(colLabel, y - 2, pw - 20, y - 2);
+  y += 4;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(40, 40, 40);
+  doc.text('Operating Total', colLabel, y);
+  doc.text('$' + opTotal.toFixed(2), colVal, y, { align: 'right' });
+  if (showOmafa) {
+    doc.setTextColor(91, 155, 213);
+    doc.text('$' + omafaOpTotal.toFixed(2), colOmafa, y, { align: 'right' });
+  }
+  y += 12;
+
+  // Overhead
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(80, 80, 80);
+  doc.text('Overhead', colLabel, y);
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(13);
+  var ohTotal = 0, omafaOhTotal = 0;
+  for (var i = 0; i < oh.length; i++) {
+    doc.setTextColor(60, 60, 60);
+    doc.text(oh[i].label, colLabel, y);
+    doc.setTextColor(40, 40, 40);
+    doc.text('$' + ohVals[i].toFixed(2), colVal, y, { align: 'right' });
+    ohTotal += ohVals[i];
+    if (showOmafa) {
+      omafaOhTotal += oh[i].val;
+      doc.setTextColor(91, 155, 213);
+      doc.text('$' + oh[i].val.toFixed(2), colOmafa, y, { align: 'right' });
+    }
+    y += 8;
+  }
+
+  // Grand total
+  y += 2;
+  doc.setDrawColor(218, 165, 32);
+  doc.setLineWidth(0.5);
+  doc.line(colLabel, y - 2, pw - 20, y - 2);
+  y += 5;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.setTextColor(40, 40, 40);
+  var grand = opTotal + ohTotal;
+  doc.text('Grand Total', colLabel, y);
+  doc.text('$' + grand.toFixed(2) + '/acre', colVal, y, { align: 'right' });
+  if (showOmafa) {
+    var omafaGrand = omafaOpTotal + omafaOhTotal;
+    doc.setTextColor(91, 155, 213);
+    doc.text('$' + omafaGrand.toFixed(2) + '/acre', colOmafa, y, { align: 'right' });
+  }
+  y += 6;
+
+  return { y: y, opTotal: opTotal, ohTotal: ohTotal, grand: grand };
+}
+
+function pdfBreakEven(doc, y, grand, price, yld, config) {
+  if (y > 230) { doc.addPage(); y = 20; }
+  y = pdfSectionTitle(doc, y, 'Break-Even Analysis');
+
+  var pw = doc.internal.pageSize.getWidth();
+  var beYield = price > 0 ? grand / price : 0;
+  var revenue = price * yld;
+  var margin = revenue - grand;
+
+  var items = [
+    { label: 'Sell Price', value: '$' + parseFloat(price).toFixed(2) + '/' + config.unit },
+    { label: 'Expected Yield', value: parseFloat(yld).toFixed(1) + ' ' + config.unitLabel },
+    { label: 'Total Cost', value: '$' + grand.toFixed(2) + '/acre' },
+    { label: 'Revenue', value: '$' + revenue.toFixed(2) + '/acre' },
+    { label: 'Break-Even Yield', value: beYield.toFixed(1) + ' ' + config.unitLabel },
+    { label: 'Net Margin', value: (margin >= 0 ? '+' : '') + '$' + margin.toFixed(2) + '/acre' }
+  ];
+
+  doc.setFontSize(14);
+  for (var i = 0; i < items.length; i++) {
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text(items[i].label, 30, y);
+    doc.setFont('helvetica', 'bold');
+    if (items[i].label === 'Net Margin') {
+      doc.setTextColor(margin >= 0 ? 67 : 224, margin >= 0 ? 176 : 90, margin >= 0 ? 106 : 74);
+    } else {
+      doc.setTextColor(40, 40, 40);
+    }
+    doc.text(items[i].value, pw - 30, y, { align: 'right' });
+    y += 10;
+  }
+
+  return y;
+}
+
+function exportFieldPDF(crop, fieldIds) {
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  var config = getCropConfig(crop);
+  var cropLabel = CROP_LABELS[crop];
+  var farmName = getFarmName();
+
+  for (var fi = 0; fi < fieldIds.length; fi++) {
+    if (fi > 0) doc.addPage();
+    var field = farmFields[fieldIds[fi]];
+    var data = getFieldCropData(fieldIds[fi], crop);
+    if (!field || !data) continue;
+
+    var y = pdfHeader(doc, farmName, cropLabel + ' — ' + field.name + ' (' + field.acres + ' acres)');
+
+    // Cost breakdown (no OMAFRA)
+    y = pdfSectionTitle(doc, y, 'Operating Costs ($/acre)');
+    var result = pdfCostTable(doc, y + 2, config.cats, data.farmVals || config.cats.map(function(c){return c.conv;}),
+      config.oh, data.farmOH || config.oh.map(function(o){return o.val;}), false);
+    y = result.y + 10;
+
+    // Total acreage cost
+    var totalCost = result.grand * field.acres;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(218, 165, 32);
+    doc.text('Total for ' + field.acres + ' acres: $' + fmtComma(totalCost), 20, y);
+    y += 14;
+
+    // Break-even
+    y = pdfBreakEven(doc, y, result.grand, data.price || 0, data.yield || 0, config);
+  }
+
+  doc.save(farmName.replace(/\s+/g, '_') + '_' + cropLabel + '_Fields_' + new Date().getFullYear() + '.pdf');
+}
+
+function exportCropSummaryPDF(crop, fieldIds) {
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  var config = getCropConfig(crop);
+  var cropLabel = CROP_LABELS[crop];
+  var farmName = getFarmName();
+  var n = fieldIds.length;
+
+  // Average the data
+  var avgVals = new Array(config.cats.length).fill(0);
+  var avgOH = new Array(config.oh.length).fill(0);
+  var avgPrice = 0, avgYield = 0, totalAcres = 0;
+  var fieldNames = [];
+
+  fieldIds.forEach(function(id) {
+    var field = farmFields[id];
+    if (!field) return;
+    totalAcres += field.acres;
+    fieldNames.push(field.name + ' (' + field.acres + ' ac)');
+    var data = getFieldCropData(id, crop);
+    var fv = data.farmVals || config.cats.map(function(c){return c.conv;});
+    var fo = data.farmOH || config.oh.map(function(o){return o.val;});
+    for (var i = 0; i < config.cats.length; i++) avgVals[i] += fv[i] || 0;
+    for (var i = 0; i < config.oh.length; i++) avgOH[i] += fo[i] || 0;
+    avgPrice += data.price || 0;
+    avgYield += data.yield || 0;
+  });
+
+  avgVals = avgVals.map(function(v) { return Math.round(v / n * 100) / 100; });
+  avgOH = avgOH.map(function(v) { return Math.round(v / n * 100) / 100; });
+  avgPrice = avgPrice / n;
+  avgYield = avgYield / n;
+
+  var y = pdfHeader(doc, farmName, cropLabel + ' — Crop Summary (' + n + ' fields, ' + totalAcres + ' total acres)');
+
+  // List fields included
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(120, 120, 120);
+  doc.text('Fields included: ' + fieldNames.join(', '), 20, y, { maxWidth: doc.internal.pageSize.getWidth() - 40 });
+  y += Math.ceil(fieldNames.join(', ').length / 80) * 5 + 8;
+
+  // Cost table with OMAFRA comparison
+  y = pdfSectionTitle(doc, y, 'Average Operating Costs vs OMAFRA ($/acre)');
+  var result = pdfCostTable(doc, y + 2, config.cats, avgVals, config.oh, avgOH, true);
+  y = result.y + 10;
+
+  // Total acreage cost
+  if (y > 255) { doc.addPage(); y = 20; }
+  var totalCost = result.grand * totalAcres;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(218, 165, 32);
+  doc.text('Total for ' + totalAcres + ' acres: $' + fmtComma(totalCost), 20, y);
+  y += 14;
+
+  // Break-even with averaged values
+  y = pdfBreakEven(doc, y, result.grand, avgPrice, avgYield, config);
+
+  doc.save(farmName.replace(/\s+/g, '_') + '_' + cropLabel + '_Summary_' + new Date().getFullYear() + '.pdf');
+}
+
 </script>
+
+<!-- Export Modal -->
+<div class="export-overlay" id="exportOverlay" onclick="if(event.target===this)closeExportModal()">
+  <div class="export-modal">
+    <h3 id="emTitle">Export PDF</h3>
+    <div class="em-sub">Choose export type and select fields</div>
+    <div class="em-tab-bar">
+      <button class="em-tab active" data-mode="field" onclick="setExportMode('field')">Individual Fields</button>
+      <button class="em-tab" data-mode="crop" onclick="setExportMode('crop')">Crop Summary</button>
+    </div>
+    <div id="emFieldList"></div>
+    <div class="em-actions">
+      <button class="em-cancel-btn" onclick="closeExportModal()">Cancel</button>
+      <button class="em-export-btn" id="emExportBtn" onclick="doExport()">Export PDF</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
