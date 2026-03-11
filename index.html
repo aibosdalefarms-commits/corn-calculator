@@ -1148,7 +1148,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 
 <script>
 // ═══ FIREBASE CONFIGURATION ═══
@@ -3908,6 +3908,9 @@ function doExport() {
   }
 
   try {
+    if (!window.jspdf || !window.jspdf.jsPDF) {
+      throw new Error('PDF library not loaded');
+    }
     if (exportMode === 'field') {
       exportFieldPDF(exportCrop, fieldIds);
     } else {
