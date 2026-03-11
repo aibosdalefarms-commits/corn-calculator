@@ -873,7 +873,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 
 <!-- HAY TAB -->
 <div class="tab-panel" id="tab-hay">
-<div class="header"><h1>Hay</h1><p>Your Farm vs OMAFRA 2025 — Established Stand · All changes save automatically</p></div>
+<div class="header"><h1>Hay</h1><p>Your Farm vs OMAFRA 2025 — Established Stand · Multi-Cut · All changes save automatically</p></div>
 
 <div class="field-selector" id="hayFieldSelector">
   <div class="field-selector-title"><span>Select Fields</span><a onclick="switchTab('fields')">Manage Fields</a></div>
@@ -883,12 +883,20 @@ canvas#compChart{display:block;width:100%;height:100%}
 
 <div class="panel"><div class="panel-title">Farm Settings</div><div class="settings-row">
   <div class="setting-item"><label>Total Hay Acres</label><div class="setting-input"><input type="number" id="hay_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="hayUpdateAll()"><span class="unit">ac</span></div></div>
+  <div class="setting-item"><label>Number of Cuts</label><div class="setting-input"><select id="hay_numCuts" onchange="hayNumCutsChanged()"><option value="1">1 cut</option><option value="2">2 cuts</option><option value="3" selected>3 cuts</option><option value="4">4 cuts</option><option value="5">5 cuts</option><option value="6">6 cuts</option><option value="7">7 cuts</option><option value="8">8 cuts</option><option value="9">9 cuts</option><option value="10">10 cuts</option></select></div></div>
 </div></div>
-<div class="panel"><div class="panel-title">Operating Costs ($/acre)</div>
-  <table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="hay_tableBody"></tbody></table>
-  <div class="mobile-cards" id="hay_mobileCards"></div>
+
+<div class="panel"><div class="panel-title">Annual Operating Costs ($/acre) — Applied Once</div>
+  <table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="hay_annualTableBody"></tbody></table>
+  <div class="mobile-cards" id="hay_annualMobileCards"></div>
+</div>
+
+<div id="hay_cutsContainer"></div>
+
+<div class="panel">
   <div class="btn-row"><button class="btn" onclick="hayResetFarm()">Reset to defaults</button><button class="btn copy-btn" onclick="hayResetFarm()">Copy OMAFRA values</button></div>
 </div>
+
 <div class="panel"><div class="panel-title">Overhead Costs ($/acre)</div><div class="overhead-grid" id="hay_overheadGrid"></div><div class="oh-total">Overhead Total: <strong id="hay_ohTotal">$42.00</strong>/ac</div></div>
 <div class="totals-row">
   <div class="total-card op-card"><div class="tc-lbl">Operating</div><div class="tc-val" id="hay_totalOpWhole">—</div><div class="tc-per" id="hay_totalOpPer">—</div></div>
@@ -901,19 +909,26 @@ canvas#compChart{display:block;width:100%;height:100%}
   <div class="chart-container"><canvas id="hay_compChart" class="comp-chart"></canvas></div>
 </div>
 <div class="panel"><div class="panel-title">Breakeven Calculator</div>
-  <div class="be-layout"><div class="be-inputs">
-    <div class="be-row"><label>Hay Price</label><div class="be-iw"><span class="sym">$</span><input type="number" id="hay_priceInput" value="200" min="0" max="1000" step="1" inputmode="decimal" oninput="hayUpdateAll()"><span class="unit">$/ton</span></div></div>
-    <div class="be-row"><label>Your Yield</label><div class="be-iw"><input type="number" id="hay_yieldInput" value="3.5" min="0" max="20" step="0.1" inputmode="decimal" oninput="hayUpdateAll()"><span class="unit">ton/ac</span></div></div>
-  </div>
+  <div class="gfo-price-box"><div class="gfo-price-info">
+    <div>
+      <div class="gfo-price-label">Current Hay Price</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="gfo-price-value" id="hay_fetchedPriceValue">—</span>
+        <button class="gfo-use-btn" id="hay_fetchedUseBtn" onclick="useHayFetchedPrice()" style="display:none;">Use this price</button>
+      </div>
+      <div class="gfo-price-source" id="hay_fetchedPriceSource">Loading hay price...</div>
+    </div>
+  </div><button class="gfo-update-btn" onclick="fetchHayPrice(true)">Update Price</button></div>
+  <div id="hay_cutBreakevenContainer"></div>
   <div class="be-results">
-    <div class="be-card"><div class="bc-lbl">OMAFRA Breakeven</div><div class="bc-val bc-omafa" id="hay_beOmafa">—</div><div class="bc-sub">ton/acre needed</div></div>
-    <div class="be-card"><div class="bc-lbl">Your Breakeven</div><div class="bc-val bc-farm" id="hay_beFarm">—</div><div class="bc-sub">ton/acre needed</div></div>
-    <div class="be-card"><div class="bc-lbl">Gross Revenue</div><div class="bc-val" id="hay_beRevenue" style="color:var(--text)">—</div><div class="bc-sub">price x yield</div></div>
+    <div class="be-card"><div class="bc-lbl">OMAFRA Breakeven</div><div class="bc-val bc-omafa" id="hay_beOmafa">—</div><div class="bc-sub">total ton/acre needed</div></div>
+    <div class="be-card"><div class="bc-lbl">Your Breakeven</div><div class="bc-val bc-farm" id="hay_beFarm">—</div><div class="bc-sub">total ton/acre needed</div></div>
+    <div class="be-card"><div class="bc-lbl">Gross Revenue</div><div class="bc-val" id="hay_beRevenue" style="color:var(--text)">—</div><div class="bc-sub">all cuts combined</div></div>
     <div class="be-card wide"><div class="bc-lbl">Your Net Margin</div><div class="bc-val" id="hay_beMargin">—</div><div class="bc-sub" id="hay_beStatus">—</div></div>
-  </div></div>
+  </div>
 </div>
-<div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="hay_sensTable"></table></div><div class="sens-note">Net margin at different price and yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
-<div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Established stand (3+ year) · Enter hay price manually — no reliable local API source</div>
+<div class="panel"><div class="panel-title">Sensitivity Analysis — Net Margin ($/acre)</div><div class="sens-scroll"><table class="sens-table" id="hay_sensTable"></table></div><div class="sens-note">Net margin at different average price and total yield combinations. Green = profitable · Red = loss · Yellow = near breakeven</div></div>
+<div class="source-note">Source: Ontario Ministry of Agriculture, Food &amp; Agribusiness — <a href="https://www.ontario.ca/files/2025-01/omafa-field-crop-budgets-pub-60-en-2025-01-14.pdf" target="_blank">2025 Field Crop Budgets (Pub. 60)</a> · Established stand (3+ year) · Hay price from local source (refreshed on app open)</div>
 <div class="export-bar"><button class="export-btn" onclick="openExportModal('hay')">Export PDF</button></div>
 </div><!-- tab-hay -->
 
@@ -1232,23 +1247,31 @@ var WHT_PRICES = [7.00,7.50,8.00,8.50,9.00];
 var WHT_YIELDS = [75,80,85,90,95];
 
 // ═══ HAY DATA (OMAFRA Pub 60, 2025 — Established Stand) ═══
-var HAY_CATS = [
-  {label:'Land Rent',             conv:275.00, notill:275.00, color:'#8B6914', info:'OMAFRA Pub 60 (2025). Hay land rents lower than row crop land in southern Ontario.'},
-  {label:'Fertilizer',           conv: 92.00, notill: 92.00, color:'#4caf6e', info:'OMAFRA Pub 60 (2025). Annual top-dress of N, P, K for established hay stand.'},
-  {label:'Baling',               conv: 52.00, notill: 52.00, color:'#e8943a', info:'OMAFRA Pub 60 (2025). Custom baling rate, large round or square bales.'},
-  {label:'Mowing & Conditioning',conv: 42.00, notill: 42.00, color:'#5b9bd5', info:'OMAFRA Pub 60 (2025). Custom mower-conditioner rate per cutting.'},
-  {label:'Hauling & Storage',    conv: 28.00, notill: 28.00, color:'#7c5cbf', info:'OMAFRA Pub 60 (2025). Moving bales from field to storage facility.'},
-  {label:'Raking / Tedding',     conv: 18.00, notill: 18.00, color:'#f0c040', info:'OMAFRA Pub 60 (2025). Custom raking or tedding to speed dry-down before baling.'},
-  {label:'Seed (Amortized)',     conv: 18.00, notill: 18.00, color:'#c4d42e', info:'OMAFRA Pub 60 (2025). Establishment seed cost spread over expected stand life (4\u20135 years).'},
-  {label:'Herbicide',            conv:  8.00, notill:  8.00, color:'#a0825a', info:'OMAFRA Pub 60 (2025). Minimal herbicide use in established hay stands.'}
+// Annual costs — applied once per year regardless of number of cuts
+var HAY_ANNUAL = [
+  {label:'Land Rent',        val:275.00, color:'#8B6914', info:'OMAFRA Pub 60 (2025). Hay land rents lower than row crop land in southern Ontario.'},
+  {label:'Fertilizer',       val: 92.00, color:'#4caf6e', info:'OMAFRA Pub 60 (2025). Annual top-dress of N, P, K for established hay stand.'},
+  {label:'Seed (Amortized)', val: 18.00, color:'#c4d42e', info:'OMAFRA Pub 60 (2025). Establishment seed cost spread over expected stand life (4\u20135 years).'},
+  {label:'Herbicide',        val:  8.00, color:'#a0825a', info:'OMAFRA Pub 60 (2025). Minimal herbicide use in established hay stands.'}
+];
+// Per-cut costs — applied per cutting
+var HAY_PERCUT = [
+  {label:'Baling',               val: 52.00, color:'#e8943a', info:'OMAFRA Pub 60 (2025). Custom baling rate, large round or square bales.'},
+  {label:'Mowing & Conditioning',val: 42.00, color:'#5b9bd5', info:'OMAFRA Pub 60 (2025). Custom mower-conditioner rate per cutting.'},
+  {label:'Hauling & Storage',    val: 28.00, color:'#7c5cbf', info:'OMAFRA Pub 60 (2025). Moving bales from field to storage facility.'},
+  {label:'Raking / Tedding',     val: 18.00, color:'#f0c040', info:'OMAFRA Pub 60 (2025). Custom raking or tedding to speed dry-down before baling.'}
 ];
 var HAY_OH = [
   {label:'Machinery Depreciation', val:28.00},
   {label:'Interest on Investment', val: 9.00},
   {label:'Other Overhead',         val: 5.00}
 ];
-var HAY_PRICES = [150,175,200,225,250];
+// Sensitivity: prices in $/lb, yields in total ton/ac
+var HAY_PRICES = [0.06,0.08,0.10,0.12,0.14];
 var HAY_YIELDS = [2.5,3.0,3.5,4.0,4.5];
+var HAY_DEFAULT_NUM_CUTS = 3;
+var HAY_DEFAULT_CUT_YIELD = 1.2;  // ton/ac per cut
+var HAY_DEFAULT_CUT_PRICE = 0.10; // $/lb
 
 // ═══ CROP STATE ═══
 var mode = 'conv';
@@ -1263,8 +1286,18 @@ var whtMode = 'conv';
 var whtFarmVals = WHT_CATS.map(function(c){return c.conv;});
 var whtFarmOH   = WHT_OH.map(function(o){return o.val;});
 
-var hayFarmVals = HAY_CATS.map(function(c){return c.conv;});
+var hayFarmAnnual = HAY_ANNUAL.map(function(c){return c.val;});
 var hayFarmOH   = HAY_OH.map(function(o){return o.val;});
+var hayNumCuts = HAY_DEFAULT_NUM_CUTS;
+// Per-cut state: arrays of {costs:[...percut costs...], yield: ton/ac, price: $/lb}
+var hayCuts = [];
+function hayInitCuts(){
+  hayCuts = [];
+  for(var c=0;c<hayNumCuts;c++){
+    hayCuts.push({costs:HAY_PERCUT.map(function(p){return p.val;}), yield:HAY_DEFAULT_CUT_YIELD, price:HAY_DEFAULT_CUT_PRICE});
+  }
+}
+hayInitCuts();
 
 var saveTimeout = null;
 
@@ -1372,10 +1405,12 @@ auth.onAuthStateChanged(function(user) {
       localStorage.removeItem(PRICE_CACHE_KEY);
       localStorage.removeItem(SOY_PRICE_CACHE_KEY);
       localStorage.removeItem(WHT_PRICE_CACHE_KEY);
+      localStorage.removeItem(HAY_PRICE_CACHE_KEY);
     } catch(e) {}
     fetchCornPrice();
     fetchSoyPrice();
     fetchWhtPrice();
+    fetchHayPrice();
   } else {
     currentUser = null;
     document.getElementById('authScreen').classList.remove('hidden');
@@ -1425,16 +1460,14 @@ function getSaveData() {
     price: whtPrEl ? (parseFloat(whtPrEl.value) || 8.00) : 8.00,
     yield: whtYlEl ? (parseFloat(whtYlEl.value) || 85) : 85
   };
-  // Hay data
+  // Hay data (multi-cut)
   var hayAcEl = document.getElementById('hay_acreageInput');
-  var hayPrEl = document.getElementById('hay_priceInput');
-  var hayYlEl = document.getElementById('hay_yieldInput');
   data.hay = {
     acreage: hayAcEl ? (parseFloat(hayAcEl.value) || 100) : 100,
-    farmVals: hayFarmVals,
+    farmAnnual: hayFarmAnnual,
     farmOH: hayFarmOH,
-    price: hayPrEl ? (parseFloat(hayPrEl.value) || 200) : 200,
-    yield: hayYlEl ? (parseFloat(hayYlEl.value) || 3.5) : 3.5
+    numCuts: hayNumCuts,
+    cuts: hayCuts.map(function(c){ return {costs:c.costs.slice(), yield:c.yield, price:c.price}; })
   };
   // Tab settings
   data.tabSettings = { order: tabOrder, hidden: hiddenTabs };
@@ -1608,23 +1641,38 @@ function applyLoadedData(data) {
     if (whtYlEl) whtYlEl.value = w.yield || 85;
   }
 
-  // Load hay data
+  // Load hay data (multi-cut)
   if (data.hay) {
     var h = data.hay;
-    if (h.farmVals && Array.isArray(h.farmVals) && h.farmVals.length === HAY_CATS.length) {
-      var valid = h.farmVals.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
-      if (valid) hayFarmVals = h.farmVals;
+    if (h.farmAnnual && Array.isArray(h.farmAnnual) && h.farmAnnual.length === HAY_ANNUAL.length) {
+      var valid = h.farmAnnual.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
+      if (valid) hayFarmAnnual = h.farmAnnual;
     }
     if (h.farmOH && Array.isArray(h.farmOH) && h.farmOH.length === HAY_OH.length) {
       var valid = h.farmOH.every(function(v) { return typeof v === 'number' && !isNaN(v) && v >= 0; });
       if (valid) hayFarmOH = h.farmOH;
     }
+    if (h.numCuts && typeof h.numCuts === 'number' && h.numCuts >= 1 && h.numCuts <= 10) {
+      hayNumCuts = h.numCuts;
+      var numSel = document.getElementById('hay_numCuts');
+      if (numSel) numSel.value = hayNumCuts;
+    }
+    if (h.cuts && Array.isArray(h.cuts)) {
+      hayCuts = [];
+      for (var ci = 0; ci < h.cuts.length && ci < hayNumCuts; ci++) {
+        var sc = h.cuts[ci];
+        hayCuts.push({
+          costs: (sc.costs && sc.costs.length === HAY_PERCUT.length) ? sc.costs.slice() : HAY_PERCUT.map(function(p){return p.val;}),
+          yield: (typeof sc.yield === 'number') ? sc.yield : HAY_DEFAULT_CUT_YIELD,
+          price: (typeof sc.price === 'number') ? sc.price : HAY_DEFAULT_CUT_PRICE
+        });
+      }
+      while (hayCuts.length < hayNumCuts) {
+        hayCuts.push({costs:HAY_PERCUT.map(function(p){return p.val;}), yield:HAY_DEFAULT_CUT_YIELD, price:HAY_DEFAULT_CUT_PRICE});
+      }
+    }
     var hayAcEl = document.getElementById('hay_acreageInput');
-    var hayPrEl = document.getElementById('hay_priceInput');
-    var hayYlEl = document.getElementById('hay_yieldInput');
     if (hayAcEl) hayAcEl.value = h.acreage || 100;
-    if (hayPrEl) hayPrEl.value = h.price || 200;
-    if (hayYlEl) hayYlEl.value = h.yield || 3.5;
   }
 
   // Load tab settings from Firebase (override localStorage)
@@ -2645,36 +2693,183 @@ function showWhtPrice(price,month,age){
 }
 function useWhtFetchedPrice(){if(currentWhtFetchedPrice){document.getElementById('wht_priceInput').value=currentWhtFetchedPrice;whtUpdateAll();var b=document.getElementById('wht_gfoUseBtn');if(b)b.style.display='none';}}
 
-// ═══ HAY CALCULATOR ═══
-function hayOmafa(i){return HAY_CATS[i].conv;}
-function hayOmafaOpTot(){var t=0;for(var i=0;i<HAY_CATS.length;i++)t+=hayOmafa(i);return t;}
+// ═══ HAY CALCULATOR (Multi-Cut) ═══
+var HAY_PRICE_CACHE_KEY = 'hayCalcPriceCache';
+var currentHayFetchedPrice = null;
+
+function hayGetNumCuts(){return hayNumCuts;}
+function hayAcres(){return parseFloat(document.getElementById('hay_acreageInput').value)||1;}
+
+// --- Totals ---
+function hayAnnualOmafaTot(){var t=0;for(var i=0;i<HAY_ANNUAL.length;i++)t+=HAY_ANNUAL[i].val;return t;}
+function hayAnnualFarmTot(){var t=0;for(var i=0;i<hayFarmAnnual.length;i++)t+=hayFarmAnnual[i];return t;}
+function hayPercutOmafaTot(){var t=0;for(var i=0;i<HAY_PERCUT.length;i++)t+=HAY_PERCUT[i].val;return t;}
+function hayAllCutsPercutFarmTot(){
+  var t=0;
+  for(var c=0;c<hayCuts.length;c++){
+    for(var i=0;i<hayCuts[c].costs.length;i++) t+=hayCuts[c].costs[i];
+  }
+  return t;
+}
+function hayOmafaOpTot(){return hayAnnualOmafaTot()+hayPercutOmafaTot()*HAY_DEFAULT_NUM_CUTS;}
+function hayFarmOpTot(){return hayAnnualFarmTot()+hayAllCutsPercutFarmTot();}
 function hayOmafaOhTot(){var t=0;for(var i=0;i<HAY_OH.length;i++)t+=HAY_OH[i].val;return t;}
-function hayFarmOpTot(){var t=0;for(var i=0;i<hayFarmVals.length;i++)t+=hayFarmVals[i];return t;}
 function hayFarmOhTot(){var t=0;for(var i=0;i<hayFarmOH.length;i++)t+=hayFarmOH[i];return t;}
 function hayFarmGrand(){return hayFarmOpTot()+hayFarmOhTot();}
 function hayOmafaGrand(){return hayOmafaOpTot()+hayOmafaOhTot();}
-function hayAcres(){return parseFloat(document.getElementById('hay_acreageInput').value)||1;}
-function buildHayTable(){
-  var tb=document.getElementById('hay_tableBody');if(!tb)return;tb.innerHTML='';
-  for(var i=0;i<HAY_CATS.length;i++){
-    var c=HAY_CATS[i],tr=document.createElement('tr');
+
+// Total yield across all cuts (ton/ac)
+function hayTotalYield(){
+  var t=0;for(var c=0;c<hayCuts.length;c++) t+=hayCuts[c].yield;
+  return t;
+}
+// Weighted average price $/lb across cuts (weighted by yield)
+function hayAvgPrice(){
+  var totalYield=hayTotalYield();if(totalYield<=0)return 0;
+  var wSum=0;for(var c=0;c<hayCuts.length;c++) wSum+=hayCuts[c].price*hayCuts[c].yield;
+  return wSum/totalYield;
+}
+// Total revenue across all cuts
+function hayTotalRevenue(){
+  var rev=0;
+  for(var c=0;c<hayCuts.length;c++){
+    // yield is ton/ac, price is $/lb, 1 ton = 2000 lbs
+    rev+=hayCuts[c].yield*2000*hayCuts[c].price;
+  }
+  return rev;
+}
+
+// --- Number of cuts changed ---
+function hayNumCutsChanged(){
+  var sel=document.getElementById('hay_numCuts');
+  var newNum=parseInt(sel.value)||3;
+  while(hayCuts.length<newNum){
+    hayCuts.push({costs:HAY_PERCUT.map(function(p){return p.val;}), yield:HAY_DEFAULT_CUT_YIELD, price:HAY_DEFAULT_CUT_PRICE});
+  }
+  while(hayCuts.length>newNum) hayCuts.pop();
+  hayNumCuts=newNum;
+  buildHayCuts();buildHayCutBE();hayUpdateAll();
+}
+
+// --- Build annual costs table ---
+function buildHayAnnualTable(){
+  var tb=document.getElementById('hay_annualTableBody');if(!tb)return;tb.innerHTML='';
+  for(var i=0;i<HAY_ANNUAL.length;i++){
+    var c=HAY_ANNUAL[i],tr=document.createElement('tr');
     tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div></td>'+
-      '<td class="val-omafa" id="hay_om_'+i+'">$'+f2(hayOmafa(i))+'</td>'+
-      '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="hay_f_'+i+'" value="'+f2(hayFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpFarm('+i+',this.value)"></div></td>'+
-      '<td class="diff-cell" id="hay_d_'+i+'"></td>';
+      '<td class="val-omafa">$'+f2(c.val)+'</td>'+
+      '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="hay_ann_'+i+'" value="'+f2(hayFarmAnnual[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpAnnual('+i+',this.value)"></div></td>'+
+      '<td class="diff-cell" id="hay_ann_d_'+i+'"></td>';
     tb.appendChild(tr);
   }
 }
-function buildHayCards(){
-  var el=document.getElementById('hay_mobileCards');if(!el)return;el.innerHTML='';
-  for(var i=0;i<HAY_CATS.length;i++){
-    var c=HAY_CATS[i],card=document.createElement('div');card.className='m-card';
-    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div><div class="diff-cell" id="hay_md_'+i+'"></div></div>'+
-      '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val" id="hay_mom_'+i+'">$'+f2(hayOmafa(i))+'</div></div>'+
-      '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="hay_mf_'+i+'" value="'+f2(hayFarmVals[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpFarm('+i+',this.value)"></div></div></div>';
+function buildHayAnnualCards(){
+  var el=document.getElementById('hay_annualMobileCards');if(!el)return;el.innerHTML='';
+  for(var i=0;i<HAY_ANNUAL.length;i++){
+    var c=HAY_ANNUAL[i],card=document.createElement('div');card.className='m-card';
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+c.color+'"></div><span class="cat-label">'+c.label+'</span>'+infoBtnHtml(c.label,c.info)+'</div><div class="diff-cell" id="hay_ann_md_'+i+'"></div></div>'+
+      '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val">$'+f2(c.val)+'</div></div>'+
+      '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="hay_ann_m_'+i+'" value="'+f2(hayFarmAnnual[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpAnnual('+i+',this.value)"></div></div></div>';
     el.appendChild(card);
   }
 }
+function hayUpAnnual(i,v){
+  hayFarmAnnual[i]=parseFloat(v)||0;
+  var d=document.getElementById('hay_ann_'+i),m=document.getElementById('hay_ann_m_'+i);
+  if(d&&document.activeElement!==d)d.value=v;if(m&&document.activeElement!==m)m.value=v;
+  hayRenderAnnualDiff(i);hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();
+}
+function hayRenderAnnualDiff(i){
+  var diff=hayFarmAnnual[i]-HAY_ANNUAL[i].val,cls,sign;
+  if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
+  else if(diff<0){cls='diff-pos';sign='-$'+Math.abs(diff).toFixed(2);}
+  else{cls='diff-neg';sign='+$'+diff.toFixed(2);}
+  var html='<span class="diff-badge">'+sign+'</span>';
+  var d=document.getElementById('hay_ann_d_'+i);if(d){d.className='diff-cell '+cls;d.innerHTML=html;}
+  var md=document.getElementById('hay_ann_md_'+i);if(md){md.className='diff-cell '+cls;md.innerHTML=html;}
+}
+
+// --- Build per-cut sections ---
+function buildHayCuts(){
+  var container=document.getElementById('hay_cutsContainer');if(!container)return;container.innerHTML='';
+  var ordinals=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+  for(var c=0;c<hayCuts.length;c++){
+    var cut=hayCuts[c];
+    var panel=document.createElement('div');panel.className='panel';
+    var title=ordinals[c]+' Cut — Per-Cut Operating Costs ($/acre)';
+    var html='<div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'+
+      '<span>'+title+'</span>'+
+      '<div style="display:flex;gap:12px;align-items:center;font-size:13px;font-weight:400;">'+
+      '<label style="color:var(--text-dim)">Yield: <input type="number" id="hay_cut_yield_'+c+'" value="'+cut.yield.toFixed(1)+'" min="0" max="20" step="0.1" style="width:60px;padding:2px 4px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;" inputmode="decimal" oninput="hayUpCutYield('+c+',this.value)"> ton/ac</label>'+
+      '<label style="color:var(--text-dim)">Price: $<input type="number" id="hay_cut_price_'+c+'" value="'+cut.price.toFixed(2)+'" min="0" max="10" step="0.01" style="width:60px;padding:2px 4px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;" inputmode="decimal" oninput="hayUpCutPrice('+c+',this.value)">/lb</label>'+
+      '</div></div>';
+    html+='<table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="hay_cut_tbody_'+c+'"></tbody></table>';
+    html+='<div class="mobile-cards" id="hay_cut_mcards_'+c+'"></div>';
+    panel.innerHTML=html;
+    container.appendChild(panel);
+    // Populate table
+    buildHayCutTable(c);
+    buildHayCutCards(c);
+  }
+}
+function buildHayCutTable(c){
+  var tb=document.getElementById('hay_cut_tbody_'+c);if(!tb)return;tb.innerHTML='';
+  for(var i=0;i<HAY_PERCUT.length;i++){
+    var p=HAY_PERCUT[i],tr=document.createElement('tr');
+    tr.innerHTML='<td><div class="cat-cell"><div class="cat-swatch" style="background:'+p.color+'"></div><span class="cat-label">'+p.label+'</span>'+infoBtnHtml(p.label,p.info)+'</div></td>'+
+      '<td class="val-omafa">$'+f2(p.val)+'</td>'+
+      '<td class="td-input"><div class="inp-wrap"><span class="sym">$</span><input type="number" id="hay_pc_'+c+'_'+i+'" value="'+f2(hayCuts[c].costs[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpPercut('+c+','+i+',this.value)"></div></td>'+
+      '<td class="diff-cell" id="hay_pc_d_'+c+'_'+i+'"></td>';
+    tb.appendChild(tr);
+  }
+}
+function buildHayCutCards(c){
+  var el=document.getElementById('hay_cut_mcards_'+c);if(!el)return;el.innerHTML='';
+  for(var i=0;i<HAY_PERCUT.length;i++){
+    var p=HAY_PERCUT[i],card=document.createElement('div');card.className='m-card';
+    card.innerHTML='<div class="m-card-top"><div class="cat-cell"><div class="cat-swatch" style="background:'+p.color+'"></div><span class="cat-label">'+p.label+'</span>'+infoBtnHtml(p.label,p.info)+'</div><div class="diff-cell" id="hay_pc_md_'+c+'_'+i+'"></div></div>'+
+      '<div class="m-card-row"><div class="m-col omafa-col"><div class="m-col-label">OMAFRA</div><div class="m-omafa-val">$'+f2(p.val)+'</div></div>'+
+      '<div class="m-col farm-col"><div class="m-col-label">Your Farm</div><div class="m-inp-wrap"><span class="sym">$</span><input type="number" id="hay_pc_m_'+c+'_'+i+'" value="'+f2(hayCuts[c].costs[i])+'" min="0" max="1000" step="0.01" inputmode="decimal" oninput="hayUpPercut('+c+','+i+',this.value)"></div></div></div>';
+    el.appendChild(card);
+  }
+}
+function hayUpPercut(c,i,v){
+  hayCuts[c].costs[i]=parseFloat(v)||0;
+  var d=document.getElementById('hay_pc_'+c+'_'+i),m=document.getElementById('hay_pc_m_'+c+'_'+i);
+  if(d&&document.activeElement!==d)d.value=v;if(m&&document.activeElement!==m)m.value=v;
+  hayRenderPercutDiff(c,i);hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();
+}
+function hayUpCutYield(c,v){hayCuts[c].yield=parseFloat(v)||0;hayUpdateBE();hayUpdateSens();saveUserData();}
+function hayUpCutPrice(c,v){hayCuts[c].price=parseFloat(v)||0;hayUpdateBE();hayUpdateSens();saveUserData();}
+function hayRenderPercutDiff(c,i){
+  var diff=hayCuts[c].costs[i]-HAY_PERCUT[i].val,cls,sign;
+  if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
+  else if(diff<0){cls='diff-pos';sign='-$'+Math.abs(diff).toFixed(2);}
+  else{cls='diff-neg';sign='+$'+diff.toFixed(2);}
+  var html='<span class="diff-badge">'+sign+'</span>';
+  var d=document.getElementById('hay_pc_d_'+c+'_'+i);if(d){d.className='diff-cell '+cls;d.innerHTML=html;}
+  var md=document.getElementById('hay_pc_md_'+c+'_'+i);if(md){md.className='diff-cell '+cls;md.innerHTML=html;}
+}
+
+// --- Build cut breakeven inputs ---
+function buildHayCutBE(){
+  var container=document.getElementById('hay_cutBreakevenContainer');if(!container)return;container.innerHTML='';
+  var ordinals=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+  var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px;">';
+  for(var c=0;c<hayCuts.length;c++){
+    html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px;">';
+    html+='<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--text);">'+ordinals[c]+' Cut</div>';
+    html+='<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">';
+    html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Yield</span><span>'+hayCuts[c].yield.toFixed(1)+' ton/ac</span></div>';
+    html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Price</span><span>$'+hayCuts[c].price.toFixed(2)+'/lb</span></div>';
+    html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Revenue</span><span>$'+f2(hayCuts[c].yield*2000*hayCuts[c].price)+'/ac</span></div>';
+    html+='</div></div>';
+  }
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+// --- Overhead ---
 function buildHayOH(){
   var g=document.getElementById('hay_overheadGrid');if(!g)return;g.innerHTML='';
   for(var i=0;i<HAY_OH.length;i++){
@@ -2683,22 +2878,27 @@ function buildHayOH(){
     g.appendChild(item);
   }
 }
-function hayUpFarm(i,v){hayFarmVals[i]=parseFloat(v)||0;var d=document.getElementById('hay_f_'+i),m=document.getElementById('hay_mf_'+i);if(d&&document.activeElement!==d)d.value=v;if(m&&document.activeElement!==m)m.value=v;hayRenderDiff(i);hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();}
 function hayUpOH(i,v){hayFarmOH[i]=parseFloat(v)||0;hayUpdateTotals();hayUpdateBE();hayUpdateSens();saveUserData();}
-function hayRenderDiff(i){
-  var diff=hayFarmVals[i]-hayOmafa(i),cls,sign;
-  if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
-  else if(diff<0){cls='diff-pos';sign='-$'+Math.abs(diff).toFixed(2);}
-  else{cls='diff-neg';sign='+$'+diff.toFixed(2);}
-  var html='<span class="diff-badge">'+sign+'</span>';
-  var d=document.getElementById('hay_d_'+i);if(d){d.className='diff-cell '+cls;d.innerHTML=html;}
-  var m=document.getElementById('hay_md_'+i);if(m){m.className='diff-cell '+cls;m.innerHTML=html;}
-}
+
+// --- Reset ---
 function hayResetFarm(){
-  for(var i=0;i<HAY_CATS.length;i++){hayFarmVals[i]=hayOmafa(i);var d=document.getElementById('hay_f_'+i);if(d)d.value=f2(hayFarmVals[i]);var m=document.getElementById('hay_mf_'+i);if(m)m.value=f2(hayFarmVals[i]);hayRenderDiff(i);}
+  for(var i=0;i<HAY_ANNUAL.length;i++){
+    hayFarmAnnual[i]=HAY_ANNUAL[i].val;
+    var d=document.getElementById('hay_ann_'+i);if(d)d.value=f2(hayFarmAnnual[i]);
+    var m=document.getElementById('hay_ann_m_'+i);if(m)m.value=f2(hayFarmAnnual[i]);
+    hayRenderAnnualDiff(i);
+  }
+  for(var c=0;c<hayCuts.length;c++){
+    hayCuts[c].costs=HAY_PERCUT.map(function(p){return p.val;});
+    hayCuts[c].yield=HAY_DEFAULT_CUT_YIELD;
+    hayCuts[c].price=HAY_DEFAULT_CUT_PRICE;
+  }
   for(var i=0;i<HAY_OH.length;i++){hayFarmOH[i]=HAY_OH[i].val;var e=document.getElementById('hay_oh_'+i);if(e)e.value=f2(hayFarmOH[i]);}
+  buildHayCuts();buildHayCutBE();
   hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();
 }
+
+// --- Totals display ---
 function hayUpdateTotals(){
   var ac=hayAcres(),opT=hayFarmOpTot(),ohT=hayFarmOhTot(),grT=opT+ohT;
   var el=function(id){return document.getElementById(id);};
@@ -2717,6 +2917,8 @@ function hayUpdateTotals(){
     else{dEl.textContent='+$'+diff.toFixed(2);dEl.className='ds-neg';pEl.textContent=' ('+(diff/omG*100).toFixed(1)+'% over OMAFRA)';}
   }
 }
+
+// --- Chart: show annual + aggregated per-cut costs ---
 function hayDrawChart(){
   var canvas=document.getElementById('hay_compChart');
   if(!canvas||!canvas.getContext)return;
@@ -2724,15 +2926,24 @@ function hayDrawChart(){
   if(rect.width<10||rect.height<10)return;
   var dpr=window.devicePixelRatio||1;canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
   var w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);
-  var isMob=w<500,pL=isMob?105:145,pR=16,pT=8,pB=26;
-  var cW=w-pL-pR,cH=h-pT-pB,n=HAY_CATS.length,gH=cH/n,bH=Math.min(gH*0.36,13),gap=2;
-  var mx=0;for(var i=0;i<n;i++){var o=hayOmafa(i);if(o>mx)mx=o;if(hayFarmVals[i]>mx)mx=hayFarmVals[i];}
+  // Build combined labels and values
+  var labels=[],omVals=[],farmVals=[],colors=[];
+  for(var i=0;i<HAY_ANNUAL.length;i++){labels.push(HAY_ANNUAL[i].label);omVals.push(HAY_ANNUAL[i].val);farmVals.push(hayFarmAnnual[i]);colors.push(HAY_ANNUAL[i].color);}
+  for(var i=0;i<HAY_PERCUT.length;i++){
+    labels.push(HAY_PERCUT[i].label+' (all cuts)');
+    omVals.push(HAY_PERCUT[i].val*HAY_DEFAULT_NUM_CUTS);
+    var farmTotal=0;for(var c=0;c<hayCuts.length;c++)farmTotal+=hayCuts[c].costs[i];
+    farmVals.push(farmTotal);colors.push(HAY_PERCUT[i].color);
+  }
+  var isMob=w<500,pL=isMob?115:155,pR=16,pT=8,pB=26;
+  var n=labels.length,cW=w-pL-pR,cH=h-pT-pB,gH=cH/n,bH=Math.min(gH*0.36,13),gap=2;
+  var mx=0;for(var i=0;i<n;i++){if(omVals[i]>mx)mx=omVals[i];if(farmVals[i]>mx)mx=farmVals[i];}
   mx*=1.12;var sc=cW/mx;var step=50;
   ctx.strokeStyle='rgba(58,61,66,0.5)';ctx.lineWidth=1;ctx.fillStyle='#7a7e85';
   ctx.font=(isMob?'9':'10')+'px Barlow,-apple-system,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
   for(var t=0;t<=mx;t+=step){var x=pL+t*sc;if(x>w-pR+1)break;ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,h-pB);ctx.stroke();ctx.fillText('$'+t,x,h-pB+4);}
   for(var i=0;i<n;i++){
-    var y=pT+i*gH,oV=hayOmafa(i),fV=hayFarmVals[i],oW=oV*sc,fW=fV*sc;
+    var y=pT+i*gH,oW=omVals[i]*sc,fW=farmVals[i]*sc;
     var y1=y+gH/2-gap-bH,y2=y+gH/2+gap;
     ctx.fillStyle='rgba(91,155,213,0.55)';ctx.strokeStyle='rgba(91,155,213,0.85)';ctx.lineWidth=1;
     rRect(ctx,pL,y1,Math.max(oW,1),bH,2);ctx.fill();ctx.stroke();
@@ -2740,42 +2951,123 @@ function hayDrawChart(){
     rRect(ctx,pL,y2,Math.max(fW,1),bH,2);ctx.fill();ctx.stroke();
     ctx.fillStyle='#e2e4e7';ctx.font=(isMob?'500 10px':'500 11px')+' Barlow,-apple-system,sans-serif';
     ctx.textAlign='right';ctx.textBaseline='middle';
-    var lbl=HAY_CATS[i].label;if(isMob&&lbl.length>13)lbl=lbl.substring(0,12)+'\u2026';
+    var lbl=labels[i];if(isMob&&lbl.length>15)lbl=lbl.substring(0,14)+'\u2026';
     ctx.fillText(lbl,pL-8,y+gH/2);
   }
 }
+
+// --- Breakeven (using $/lb and ton/ac) ---
 function hayUpdateBE(){
-  var price=parseFloat(document.getElementById('hay_priceInput').value)||0;
-  var yld=parseFloat(document.getElementById('hay_yieldInput').value)||0;
   var el=function(id){return document.getElementById(id);};
   var oG=hayOmafaGrand(),fG=hayFarmGrand();
-  var beO=price>0?oG/price:Infinity,beF=price>0?fG/price:Infinity;
+  var avgPriceLb=hayAvgPrice(); // $/lb
+  var avgPriceTon=avgPriceLb*2000; // $/ton for breakeven calc
+  var totalYield=hayTotalYield();
+  var beO=avgPriceTon>0?oG/avgPriceTon:Infinity,beF=avgPriceTon>0?fG/avgPriceTon:Infinity;
   if(el('hay_beOmafa'))el('hay_beOmafa').textContent=isFinite(beO)?beO.toFixed(1)+' ton':'—';
   if(el('hay_beFarm'))el('hay_beFarm').textContent=isFinite(beF)?beF.toFixed(1)+' ton':'—';
-  var rev=price*yld,margin=rev-fG;
+  var rev=hayTotalRevenue(),margin=rev-fG;
   if(el('hay_beRevenue'))el('hay_beRevenue').textContent='$'+f2(rev);
   var mEl=el('hay_beMargin'),mSub=el('hay_beStatus');
   if(mEl&&mSub){
     mEl.textContent=(margin>=0?'+':'')+' $'+f2(margin);
-    if(margin>=0){mEl.style.color='var(--green)';mSub.textContent='surplus — '+(margin/fG*100).toFixed(1)+'% above costs';mSub.style.color='var(--green)';}
-    else{mEl.style.color='var(--red)';var need=isFinite(beF)?beF-yld:0;mSub.textContent='shortfall — need '+need.toFixed(1)+' more ton/ac';mSub.style.color='var(--red)';}
+    if(margin>=0){mEl.style.color='var(--green)';mSub.textContent='surplus — '+(fG>0?(margin/fG*100).toFixed(1):'0')+'% above costs';mSub.style.color='var(--green)';}
+    else{mEl.style.color='var(--red)';var need=isFinite(beF)?beF-totalYield:0;mSub.textContent='shortfall — need '+need.toFixed(1)+' more ton/ac';mSub.style.color='var(--red)';}
   }
+  buildHayCutBE();
 }
+
+// --- Sensitivity ($/lb prices x total yield in ton) ---
 function hayUpdateSens(){
   var gT=hayFarmGrand(),tbl=document.getElementById('hay_sensTable');if(!tbl)return;
   var html='<tr><th class="sens-corner">Yield \\ Price</th>';
-  for(var p=0;p<HAY_PRICES.length;p++)html+='<th class="sens-price-hdr">$'+HAY_PRICES[p]+'/ton</th>';
+  for(var p=0;p<HAY_PRICES.length;p++)html+='<th class="sens-price-hdr">$'+HAY_PRICES[p].toFixed(2)+'/lb</th>';
   html+='</tr>';
   for(var y=0;y<HAY_YIELDS.length;y++){
     html+='<tr><th class="sens-yield-hdr">'+HAY_YIELDS[y]+' ton</th>';
-    for(var p=0;p<HAY_PRICES.length;p++){var margin=(HAY_PRICES[p]*HAY_YIELDS[y])-gT;var bg=sensColor(margin),tc=sensText(margin);html+='<td style="background:'+bg+';color:'+tc+'">$'+(margin>=0?'+':'')+Math.round(margin)+'</td>';}
+    for(var p=0;p<HAY_PRICES.length;p++){
+      var rev=HAY_PRICES[p]*HAY_YIELDS[y]*2000; // $/lb * ton * 2000 lb/ton
+      var margin=rev-gT;var bg=sensColor(margin),tc=sensText(margin);
+      html+='<td style="background:'+bg+';color:'+tc+'">$'+(margin>=0?'+':'')+Math.round(margin)+'</td>';
+    }
     html+='</tr>';
   }
   tbl.innerHTML=html;
 }
+
+// --- Hay price fetching ---
+function fetchHayPrice(forceRefresh){
+  if(!forceRefresh){
+    try{
+      var cached=localStorage.getItem(HAY_PRICE_CACHE_KEY);
+      if(cached){var d=JSON.parse(cached);if(Date.now()-d.timestamp<PRICE_CACHE_DURATION){
+        showHayPrice(d.price,d.month,Math.round((Date.now()-d.timestamp)/60000));
+        hayApplyFetchedPrice(d.price);return;
+      }}
+    }catch(e){}
+  }
+  var el=function(id){return document.getElementById(id);};
+  if(el('hay_fetchedPriceValue')){el('hay_fetchedPriceValue').textContent='...';el('hay_fetchedPriceValue').style.color='var(--omafa)';}
+  if(el('hay_fetchedPriceSource'))el('hay_fetchedPriceSource').textContent='Fetching hay price...';
+  var urls=['hay-price.json','https://raw.githubusercontent.com/aibosdalefarms-commits/corn-calculator/main/hay-price.json'];
+  (async function(){
+    for(var i=0;i<urls.length;i++){
+      try{
+        var r=await fetch(urls[i],{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);
+        var data=await r.json();
+        if(data.price&&data.month){
+          try{localStorage.setItem(HAY_PRICE_CACHE_KEY,JSON.stringify({price:data.price,month:data.month,timestamp:Date.now()}));}catch(e){}
+          showHayPrice(data.price,data.month,0);
+          hayApplyFetchedPrice(data.price);return;
+        }
+      }catch(e){console.log('Hay price fetch '+i+' failed:',e);}
+    }
+    // All failed
+    var el2=function(id){return document.getElementById(id);};
+    if(el2('hay_fetchedPriceValue')){el2('hay_fetchedPriceValue').textContent='unavailable';el2('hay_fetchedPriceValue').style.color='var(--red)';}
+    if(el2('hay_fetchedPriceSource'))el2('hay_fetchedPriceSource').textContent='Could not load hay price';
+  })();
+}
+function showHayPrice(price,month,age){
+  currentHayFetchedPrice=price;
+  var el=function(id){return document.getElementById(id);};
+  if(el('hay_fetchedPriceValue')){el('hay_fetchedPriceValue').textContent='$'+price+'/lb';el('hay_fetchedPriceValue').style.color='var(--green)';}
+  if(el('hay_fetchedPriceSource')){var t=month+' avg';if(age>0)t+=' (cached '+age+'m ago)';el('hay_fetchedPriceSource').textContent=t;}
+  // Show "use" button if any cut price differs
+  var btn=el('hay_fetchedUseBtn');
+  if(btn){
+    var differs=false;var p=parseFloat(price)||0;
+    for(var c=0;c<hayCuts.length;c++){if(Math.abs(hayCuts[c].price-p)>0.001){differs=true;break;}}
+    btn.style.display=differs?'inline-block':'none';
+  }
+}
+function hayApplyFetchedPrice(price){
+  // Only apply to cuts that still have the default price
+  var p=parseFloat(price)||0;
+  // Don't auto-overwrite user values - just show the fetched price
+}
+function useHayFetchedPrice(){
+  if(currentHayFetchedPrice){
+    var p=parseFloat(currentHayFetchedPrice)||0;
+    for(var c=0;c<hayCuts.length;c++){
+      hayCuts[c].price=p;
+      var inp=document.getElementById('hay_cut_price_'+c);if(inp)inp.value=p.toFixed(2);
+    }
+    var btn=document.getElementById('hay_fetchedUseBtn');if(btn)btn.style.display='none';
+    hayUpdateBE();hayUpdateSens();saveUserData();
+  }
+}
+
 function hayUpdateAll(){hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();}
 var hayInitDone=false;
-function initHay(){if(hayInitDone)return;hayInitDone=true;buildHayTable();buildHayCards();buildHayOH();for(var i=0;i<HAY_CATS.length;i++)hayRenderDiff(i);hayUpdateAll();}
+function initHay(){
+  if(hayInitDone)return;hayInitDone=true;
+  buildHayAnnualTable();buildHayAnnualCards();buildHayCuts();buildHayOH();buildHayCutBE();
+  for(var i=0;i<HAY_ANNUAL.length;i++)hayRenderAnnualDiff(i);
+  for(var c=0;c<hayCuts.length;c++){for(var i=0;i<HAY_PERCUT.length;i++)hayRenderPercutDiff(c,i);}
+  hayUpdateAll();
+  fetchHayPrice();
+}
 
 // ═══ UTILITY CALCULATORS ═══
 
@@ -3210,10 +3502,13 @@ function getDefaultCropData(crop) {
     data.price = 8.00;
     data.yield = 85;
   } else if (crop === 'hay') {
-    data.farmVals = HAY_CATS.map(function(c) { return c.conv; });
+    data.farmAnnual = HAY_ANNUAL.map(function(c) { return c.val; });
     data.farmOH = HAY_OH.map(function(o) { return o.val; });
-    data.price = 200;
-    data.yield = 3.5;
+    data.numCuts = HAY_DEFAULT_NUM_CUTS;
+    data.cuts = [];
+    for (var ci = 0; ci < HAY_DEFAULT_NUM_CUTS; ci++) {
+      data.cuts.push({costs:HAY_PERCUT.map(function(p){return p.val;}), yield:HAY_DEFAULT_CUT_YIELD, price:HAY_DEFAULT_CUT_PRICE});
+    }
   }
   return data;
 }
@@ -3506,10 +3801,10 @@ function saveCurrentStateToCropData(fieldId, crop) {
     data.price = parseFloat(document.getElementById('wht_priceInput').value) || 8.00;
     data.yield = parseFloat(document.getElementById('wht_yieldInput').value) || 85;
   } else if (crop === 'hay') {
-    data.farmVals = hayFarmVals.slice();
+    data.farmAnnual = hayFarmAnnual.slice();
     data.farmOH = hayFarmOH.slice();
-    data.price = parseFloat(document.getElementById('hay_priceInput').value) || 200;
-    data.yield = parseFloat(document.getElementById('hay_yieldInput').value) || 3.5;
+    data.numCuts = hayNumCuts;
+    data.cuts = hayCuts.map(function(c){ return {costs:c.costs.slice(), yield:c.yield, price:c.price}; });
   }
   field.cropData[crop] = data;
 }
@@ -3583,13 +3878,26 @@ function applySingleFieldData(fieldId, crop) {
   } else if (crop === 'hay') {
     var acEl = document.getElementById('hay_acreageInput');
     if (acEl) acEl.value = field.acres;
-    if (data.farmVals && data.farmVals.length === HAY_CATS.length) hayFarmVals = data.farmVals.slice();
+    if (data.farmAnnual && data.farmAnnual.length === HAY_ANNUAL.length) hayFarmAnnual = data.farmAnnual.slice();
     if (data.farmOH && data.farmOH.length === HAY_OH.length) hayFarmOH = data.farmOH.slice();
-    var prEl = document.getElementById('hay_priceInput');
-    var ylEl = document.getElementById('hay_yieldInput');
-    if (prEl && data.price) prEl.value = data.price;
-    if (ylEl && data.yield) ylEl.value = data.yield;
-    if (hayInitDone) { buildHayTable(); buildHayCards(); buildHayOH(); for (var i = 0; i < HAY_CATS.length; i++) hayRenderDiff(i); hayUpdateAll(); }
+    if (data.numCuts && data.numCuts >= 1 && data.numCuts <= 10) {
+      hayNumCuts = data.numCuts;
+      var numSel = document.getElementById('hay_numCuts');
+      if (numSel) numSel.value = hayNumCuts;
+    }
+    if (data.cuts && Array.isArray(data.cuts)) {
+      hayCuts = [];
+      for (var ci = 0; ci < data.cuts.length && ci < hayNumCuts; ci++) {
+        var sc = data.cuts[ci];
+        hayCuts.push({
+          costs: (sc.costs && sc.costs.length === HAY_PERCUT.length) ? sc.costs.slice() : HAY_PERCUT.map(function(p){return p.val;}),
+          yield: (typeof sc.yield === 'number') ? sc.yield : HAY_DEFAULT_CUT_YIELD,
+          price: (typeof sc.price === 'number') ? sc.price : HAY_DEFAULT_CUT_PRICE
+        });
+      }
+      while (hayCuts.length < hayNumCuts) hayCuts.push({costs:HAY_PERCUT.map(function(p){return p.val;}), yield:HAY_DEFAULT_CUT_YIELD, price:HAY_DEFAULT_CUT_PRICE});
+    }
+    if (hayInitDone) { buildHayAnnualTable(); buildHayAnnualCards(); buildHayCuts(); buildHayOH(); buildHayCutBE(); for (var i = 0; i < HAY_ANNUAL.length; i++) hayRenderAnnualDiff(i); for (var c = 0; c < hayCuts.length; c++) { for (var pi = 0; pi < HAY_PERCUT.length; pi++) hayRenderPercutDiff(c, pi); } hayUpdateAll(); }
   }
 }
 
@@ -3660,23 +3968,43 @@ function applyAveragedFieldData(fieldIds, crop) {
   } else if (crop === 'hay') {
     var acEl = document.getElementById('hay_acreageInput');
     if (acEl) acEl.value = Math.round(totalAcres * 10) / 10;
-    var avgVals = new Array(HAY_CATS.length).fill(0);
+    var avgAnnual = new Array(HAY_ANNUAL.length).fill(0);
     var avgOH = new Array(HAY_OH.length).fill(0);
-    var avgPrice = 0, avgYield = 0;
+    // Use max numCuts across fields, average the per-cut costs
+    var maxCuts = HAY_DEFAULT_NUM_CUTS;
     fieldIds.forEach(function(id) {
       var data = (farmFields[id].cropData && farmFields[id].cropData.hay) || getDefaultCropData('hay');
-      for (var i = 0; i < HAY_CATS.length; i++) avgVals[i] += (data.farmVals && data.farmVals[i]) || HAY_CATS[i].conv;
+      for (var i = 0; i < HAY_ANNUAL.length; i++) avgAnnual[i] += (data.farmAnnual && data.farmAnnual[i]) || HAY_ANNUAL[i].val;
       for (var i = 0; i < HAY_OH.length; i++) avgOH[i] += (data.farmOH && data.farmOH[i]) || HAY_OH[i].val;
-      avgPrice += data.price || 200;
-      avgYield += data.yield || 3.5;
+      if (data.numCuts && data.numCuts > maxCuts) maxCuts = data.numCuts;
     });
-    hayFarmVals = avgVals.map(function(v) { return Math.round(v / n * 100) / 100; });
+    hayFarmAnnual = avgAnnual.map(function(v) { return Math.round(v / n * 100) / 100; });
     hayFarmOH = avgOH.map(function(v) { return Math.round(v / n * 100) / 100; });
-    var prEl = document.getElementById('hay_priceInput');
-    var ylEl = document.getElementById('hay_yieldInput');
-    if (prEl) prEl.value = (avgPrice / n).toFixed(2);
-    if (ylEl) ylEl.value = (avgYield / n).toFixed(1);
-    if (hayInitDone) { buildHayTable(); buildHayCards(); buildHayOH(); for (var i = 0; i < HAY_CATS.length; i++) hayRenderDiff(i); hayUpdateAll(); }
+    hayNumCuts = maxCuts;
+    var numSel = document.getElementById('hay_numCuts');
+    if (numSel) numSel.value = hayNumCuts;
+    // Average per-cut data
+    hayCuts = [];
+    for (var ci = 0; ci < hayNumCuts; ci++) {
+      var cutCosts = new Array(HAY_PERCUT.length).fill(0);
+      var cutYield = 0, cutPrice = 0, cutCount = 0;
+      fieldIds.forEach(function(id) {
+        var data = (farmFields[id].cropData && farmFields[id].cropData.hay) || getDefaultCropData('hay');
+        if (data.cuts && data.cuts[ci]) {
+          cutCount++;
+          for (var pi = 0; pi < HAY_PERCUT.length; pi++) cutCosts[pi] += (data.cuts[ci].costs && data.cuts[ci].costs[pi]) || HAY_PERCUT[pi].val;
+          cutYield += data.cuts[ci].yield || HAY_DEFAULT_CUT_YIELD;
+          cutPrice += data.cuts[ci].price || HAY_DEFAULT_CUT_PRICE;
+        }
+      });
+      if (cutCount === 0) cutCount = 1;
+      hayCuts.push({
+        costs: cutCosts.map(function(v) { return Math.round(v / cutCount * 100) / 100; }),
+        yield: Math.round(cutYield / cutCount * 10) / 10,
+        price: Math.round(cutPrice / cutCount * 100) / 100
+      });
+    }
+    if (hayInitDone) { buildHayAnnualTable(); buildHayAnnualCards(); buildHayCuts(); buildHayOH(); buildHayCutBE(); for (var i = 0; i < HAY_ANNUAL.length; i++) hayRenderAnnualDiff(i); for (var c = 0; c < hayCuts.length; c++) { for (var pi = 0; pi < HAY_PERCUT.length; pi++) hayRenderPercutDiff(c, pi); } hayUpdateAll(); }
   }
 }
 
@@ -4049,7 +4377,7 @@ function getCropConfig(crop) {
   if (crop === 'corn') return { cats: CATS, oh: OH, unit: 'bu', unitLabel: 'bu/acre', priceLabel: '$/bu' };
   if (crop === 'soybeans') return { cats: SOY_CATS, oh: SOY_OH, unit: 'bu', unitLabel: 'bu/acre', priceLabel: '$/bu' };
   if (crop === 'wheat') return { cats: WHT_CATS, oh: WHT_OH, unit: 'bu', unitLabel: 'bu/acre', priceLabel: '$/bu' };
-  if (crop === 'hay') return { cats: HAY_CATS, oh: HAY_OH, unit: 'ton', unitLabel: 'ton/acre', priceLabel: '$/ton' };
+  if (crop === 'hay') return { cats: HAY_ANNUAL.concat(HAY_PERCUT), oh: HAY_OH, unit: 'lb', unitLabel: 'ton/acre', priceLabel: '$/lb', isHay: true };
   return null;
 }
 
