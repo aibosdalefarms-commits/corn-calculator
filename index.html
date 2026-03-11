@@ -411,6 +411,20 @@ canvas#compChart{display:block;width:100%;height:100%}
 .em-tab:hover{color:var(--text)}
 .em-tab.active{background:var(--surface-hi);color:var(--accent);font-weight:600}
 .em-none{font-size:14px;color:var(--text-dim);text-align:center;padding:16px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--green);color:#141618;font-family:inherit;font-size:15px;font-weight:600;padding:12px 24px;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.35);z-index:10010;transition:transform .35s ease;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--red);color:#fff}
+.em-divider{height:1px;background:var(--border);margin:18px 0 14px}
+.em-history-title{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.em-hist-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-hi);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+.em-hist-info{flex:1;min-width:0}
+.em-hist-label{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.em-hist-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
+.em-hist-actions{display:flex;gap:4px;flex-shrink:0}
+.em-hist-actions button{background:none;border:1px solid var(--border);color:var(--text-dim);font-size:12px;padding:5px 10px;border-radius:5px;cursor:pointer;font-family:inherit;transition:all .2s;-webkit-tap-highlight-color:transparent}
+.em-hist-actions .em-hist-dl:hover{border-color:var(--omafa);color:var(--omafa)}
+.em-hist-actions .em-hist-del:hover{border-color:var(--red);color:var(--red)}
+.em-hist-scroll{max-height:200px;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -1428,6 +1442,8 @@ function getSaveData() {
   var fieldData = getFieldSaveData();
   data.farmFields = fieldData.farmFields;
   data.selectedFields = fieldData.selectedFields;
+  // Export history
+  data.exportHistory = exportHistory;
   return data;
 }
 
@@ -1626,6 +1642,9 @@ function applyLoadedData(data) {
 
   // Load field data
   loadFieldData(data);
+
+  // Load export history
+  loadExportHistory(data);
 
   return true;
 }
@@ -3755,9 +3774,24 @@ if('serviceWorker' in navigator){
   });
 }
 
+// ═══ TOAST ═══
+var _toastTimer = null;
+function showToast(msg, isError) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (isError ? ' error' : '');
+  // Force reflow then show
+  void el.offsetWidth;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { el.classList.remove('show'); }, 3500);
+}
+
 // ═══ EXPORT PDF ═══
 var exportCrop = '';
 var exportMode = 'field'; // 'field' or 'crop'
+var exportHistory = []; // stored snapshots, max 30
+var EXPORT_HISTORY_MAX = 30;
 
 function openExportModal(crop) {
   exportCrop = crop;
@@ -3765,6 +3799,7 @@ function openExportModal(crop) {
   var overlay = document.getElementById('exportOverlay');
   overlay.classList.add('open');
   buildExportModal();
+  buildExportHistory();
 }
 
 function closeExportModal() {
@@ -3820,6 +3855,44 @@ function buildExportModal() {
   document.getElementById('emExportBtn').disabled = false;
 }
 
+function buildExportHistory() {
+  var list = document.getElementById('emHistList');
+  list.innerHTML = '';
+  // Filter to current crop
+  var cropHist = exportHistory.filter(function(h) { return h.crop === exportCrop; });
+  var countEl = document.getElementById('emHistCount');
+  countEl.textContent = cropHist.length > 0 ? '(' + cropHist.length + ')' : '';
+
+  if (cropHist.length === 0) {
+    list.innerHTML = '<div class="em-none">No past exports for this crop</div>';
+    return;
+  }
+
+  // Most recent first
+  cropHist.sort(function(a, b) { return b.timestamp - a.timestamp; });
+
+  cropHist.forEach(function(h) {
+    var div = document.createElement('div');
+    div.className = 'em-hist-item';
+    var date = new Date(h.timestamp);
+    var dateStr = date.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
+    var timeStr = date.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
+    var typeLabel = h.type === 'field' ? 'Individual' : 'Summary';
+    var fieldStr = h.fieldNames ? h.fieldNames.join(', ') : '';
+    if (fieldStr.length > 40) fieldStr = fieldStr.substring(0, 37) + '...';
+
+    div.innerHTML = '<div class="em-hist-info">' +
+      '<div class="em-hist-label">' + typeLabel + ' — ' + fieldStr + '</div>' +
+      '<div class="em-hist-meta">' + dateStr + ' ' + timeStr + ' · $' + h.grandTotal.toFixed(2) + '/acre</div>' +
+      '</div>' +
+      '<div class="em-hist-actions">' +
+      '<button class="em-hist-dl" onclick="redownloadExport(\'' + h.id + '\')">PDF</button>' +
+      '<button class="em-hist-del" onclick="deleteExport(\'' + h.id + '\')">Del</button>' +
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
 function getCheckedExportFields() {
   var cbs = document.querySelectorAll('.em-field-cb:checked');
   var ids = [];
@@ -3829,14 +3902,144 @@ function getCheckedExportFields() {
 
 function doExport() {
   var fieldIds = getCheckedExportFields();
-  if (fieldIds.length === 0) return;
-
-  if (exportMode === 'field') {
-    exportFieldPDF(exportCrop, fieldIds);
-  } else {
-    exportCropSummaryPDF(exportCrop, fieldIds);
+  if (fieldIds.length === 0) {
+    showToast('Please select at least one field', true);
+    return;
   }
-  closeExportModal();
+
+  try {
+    if (exportMode === 'field') {
+      exportFieldPDF(exportCrop, fieldIds);
+    } else {
+      exportCropSummaryPDF(exportCrop, fieldIds);
+    }
+    closeExportModal();
+    showToast('PDF exported successfully');
+  } catch (e) {
+    console.error('Export error:', e);
+    showToast('Export failed — please try again', true);
+  }
+}
+
+// ═══ EXPORT HISTORY STORAGE ═══
+function saveExportSnapshot(snapshot) {
+  snapshot.id = 'ex_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 5);
+  snapshot.timestamp = Date.now();
+  exportHistory.push(snapshot);
+  // Cap at 30
+  if (exportHistory.length > EXPORT_HISTORY_MAX) {
+    exportHistory.sort(function(a, b) { return b.timestamp - a.timestamp; });
+    exportHistory = exportHistory.slice(0, EXPORT_HISTORY_MAX);
+  }
+  saveExportHistoryToDb();
+  return snapshot.id;
+}
+
+function deleteExport(id) {
+  exportHistory = exportHistory.filter(function(h) { return h.id !== id; });
+  saveExportHistoryToDb();
+  buildExportHistory();
+}
+
+function saveExportHistoryToDb() {
+  if (!currentUser) return;
+  try {
+    db.ref('users/' + currentUser.uid + '/exportHistory').set(exportHistory);
+  } catch (e) {
+    console.warn('Failed to save export history:', e);
+  }
+  // Also save to localStorage backup
+  try {
+    localStorage.setItem('exportHistory_backup', JSON.stringify(exportHistory));
+  } catch (e) {}
+}
+
+function loadExportHistory(data) {
+  if (data && data.exportHistory && Array.isArray(data.exportHistory)) {
+    exportHistory = data.exportHistory;
+  } else {
+    // Try localStorage backup
+    try {
+      var backup = localStorage.getItem('exportHistory_backup');
+      if (backup) exportHistory = JSON.parse(backup) || [];
+    } catch (e) { exportHistory = []; }
+  }
+}
+
+function redownloadExport(id) {
+  var snap = exportHistory.find(function(h) { return h.id === id; });
+  if (!snap) { showToast('Export not found', true); return; }
+
+  try {
+    if (snap.type === 'field') {
+      regenFieldPDF(snap);
+    } else {
+      regenCropSummaryPDF(snap);
+    }
+    showToast('PDF re-downloaded successfully');
+  } catch (e) {
+    console.error('Re-download error:', e);
+    showToast('Re-download failed', true);
+  }
+}
+
+function regenFieldPDF(snap) {
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  var config = getCropConfig(snap.crop);
+  var cropLabel = CROP_LABELS[snap.crop];
+
+  for (var fi = 0; fi < snap.fields.length; fi++) {
+    if (fi > 0) doc.addPage();
+    var fd = snap.fields[fi];
+    var y = pdfHeader(doc, snap.farmName, cropLabel + ' \u2014 ' + fd.name + ' (' + fd.acres + ' acres)');
+    y = pdfSectionTitle(doc, y, 'Operating Costs ($/acre)');
+    var result = pdfCostTable(doc, y + 2, config.cats, fd.farmVals, config.oh, fd.farmOH, false);
+    y = result.y + 10;
+    var totalCost = result.grand * fd.acres;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(218, 165, 32);
+    doc.text('Total for ' + fd.acres + ' acres: $' + fmtComma(totalCost), 20, y);
+    y += 14;
+    y = pdfBreakEven(doc, y, result.grand, fd.price, fd.yield, config);
+  }
+
+  var dateStr = new Date(snap.timestamp).toISOString().slice(0, 10);
+  doc.save(snap.farmName.replace(/\s+/g, '_') + '_' + cropLabel + '_Fields_' + dateStr + '.pdf');
+}
+
+function regenCropSummaryPDF(snap) {
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ unit: 'mm', format: 'letter' });
+  var config = getCropConfig(snap.crop);
+  var cropLabel = CROP_LABELS[snap.crop];
+
+  var y = pdfHeader(doc, snap.farmName, cropLabel + ' \u2014 Crop Summary (' + snap.fieldCount + ' fields, ' + snap.totalAcres + ' total acres)');
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(120, 120, 120);
+  var fieldStr = 'Fields included: ' + snap.fieldNames.join(', ');
+  doc.text(fieldStr, 20, y, { maxWidth: doc.internal.pageSize.getWidth() - 40 });
+  y += Math.ceil(fieldStr.length / 80) * 5 + 8;
+
+  y = pdfSectionTitle(doc, y, 'Average Operating Costs vs OMAFRA ($/acre)');
+  var result = pdfCostTable(doc, y + 2, config.cats, snap.avgVals, config.oh, snap.avgOH, true);
+  y = result.y + 10;
+
+  if (y > 255) { doc.addPage(); y = 20; }
+  var totalCost = result.grand * snap.totalAcres;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(218, 165, 32);
+  doc.text('Total for ' + snap.totalAcres + ' acres: $' + fmtComma(totalCost), 20, y);
+  y += 14;
+
+  y = pdfBreakEven(doc, y, result.grand, snap.avgPrice, snap.avgYield, config);
+
+  var dateStr = new Date(snap.timestamp).toISOString().slice(0, 10);
+  doc.save(snap.farmName.replace(/\s+/g, '_') + '_' + cropLabel + '_Summary_' + dateStr + '.pdf');
 }
 
 function getCropConfig(crop) {
@@ -4042,33 +4245,49 @@ function exportFieldPDF(crop, fieldIds) {
   var cropLabel = CROP_LABELS[crop];
   var farmName = getFarmName();
 
+  // Build snapshot data
+  var snapFields = [];
+  var snapNames = [];
+  var lastGrand = 0;
+
   for (var fi = 0; fi < fieldIds.length; fi++) {
     if (fi > 0) doc.addPage();
     var field = farmFields[fieldIds[fi]];
     var data = getFieldCropData(fieldIds[fi], crop);
     if (!field || !data) continue;
 
-    var y = pdfHeader(doc, farmName, cropLabel + ' — ' + field.name + ' (' + field.acres + ' acres)');
+    var fv = data.farmVals || config.cats.map(function(c){return c.conv;});
+    var fo = data.farmOH || config.oh.map(function(o){return o.val;});
 
-    // Cost breakdown (no OMAFRA)
+    var y = pdfHeader(doc, farmName, cropLabel + ' \u2014 ' + field.name + ' (' + field.acres + ' acres)');
     y = pdfSectionTitle(doc, y, 'Operating Costs ($/acre)');
-    var result = pdfCostTable(doc, y + 2, config.cats, data.farmVals || config.cats.map(function(c){return c.conv;}),
-      config.oh, data.farmOH || config.oh.map(function(o){return o.val;}), false);
+    var result = pdfCostTable(doc, y + 2, config.cats, fv, config.oh, fo, false);
     y = result.y + 10;
 
-    // Total acreage cost
     var totalCost = result.grand * field.acres;
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(218, 165, 32);
     doc.text('Total for ' + field.acres + ' acres: $' + fmtComma(totalCost), 20, y);
     y += 14;
-
-    // Break-even
     y = pdfBreakEven(doc, y, result.grand, data.price || 0, data.yield || 0, config);
+
+    lastGrand = result.grand;
+    snapFields.push({ name: field.name, acres: field.acres, farmVals: fv.slice(), farmOH: fo.slice(), price: data.price || 0, yield: data.yield || 0 });
+    snapNames.push(field.name);
   }
 
   doc.save(farmName.replace(/\s+/g, '_') + '_' + cropLabel + '_Fields_' + new Date().getFullYear() + '.pdf');
+
+  // Save snapshot
+  saveExportSnapshot({
+    type: 'field',
+    crop: crop,
+    farmName: farmName,
+    fieldNames: snapNames,
+    fields: snapFields,
+    grandTotal: lastGrand
+  });
 }
 
 function exportCropSummaryPDF(crop, fieldIds) {
@@ -4079,7 +4298,6 @@ function exportCropSummaryPDF(crop, fieldIds) {
   var farmName = getFarmName();
   var n = fieldIds.length;
 
-  // Average the data
   var avgVals = new Array(config.cats.length).fill(0);
   var avgOH = new Array(config.oh.length).fill(0);
   var avgPrice = 0, avgYield = 0, totalAcres = 0;
@@ -4104,21 +4322,18 @@ function exportCropSummaryPDF(crop, fieldIds) {
   avgPrice = avgPrice / n;
   avgYield = avgYield / n;
 
-  var y = pdfHeader(doc, farmName, cropLabel + ' — Crop Summary (' + n + ' fields, ' + totalAcres + ' total acres)');
+  var y = pdfHeader(doc, farmName, cropLabel + ' \u2014 Crop Summary (' + n + ' fields, ' + totalAcres + ' total acres)');
 
-  // List fields included
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(120, 120, 120);
   doc.text('Fields included: ' + fieldNames.join(', '), 20, y, { maxWidth: doc.internal.pageSize.getWidth() - 40 });
   y += Math.ceil(fieldNames.join(', ').length / 80) * 5 + 8;
 
-  // Cost table with OMAFRA comparison
   y = pdfSectionTitle(doc, y, 'Average Operating Costs vs OMAFRA ($/acre)');
   var result = pdfCostTable(doc, y + 2, config.cats, avgVals, config.oh, avgOH, true);
   y = result.y + 10;
 
-  // Total acreage cost
   if (y > 255) { doc.addPage(); y = 20; }
   var totalCost = result.grand * totalAcres;
   doc.setFontSize(14);
@@ -4127,13 +4342,30 @@ function exportCropSummaryPDF(crop, fieldIds) {
   doc.text('Total for ' + totalAcres + ' acres: $' + fmtComma(totalCost), 20, y);
   y += 14;
 
-  // Break-even with averaged values
   y = pdfBreakEven(doc, y, result.grand, avgPrice, avgYield, config);
 
   doc.save(farmName.replace(/\s+/g, '_') + '_' + cropLabel + '_Summary_' + new Date().getFullYear() + '.pdf');
+
+  // Save snapshot
+  saveExportSnapshot({
+    type: 'crop',
+    crop: crop,
+    farmName: farmName,
+    fieldNames: fieldNames,
+    fieldCount: n,
+    totalAcres: totalAcres,
+    avgVals: avgVals.slice(),
+    avgOH: avgOH.slice(),
+    avgPrice: avgPrice,
+    avgYield: avgYield,
+    grandTotal: result.grand
+  });
 }
 
 </script>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <!-- Export Modal -->
 <div class="export-overlay" id="exportOverlay" onclick="if(event.target===this)closeExportModal()">
@@ -4149,6 +4381,9 @@ function exportCropSummaryPDF(crop, fieldIds) {
       <button class="em-cancel-btn" onclick="closeExportModal()">Cancel</button>
       <button class="em-export-btn" id="emExportBtn" onclick="doExport()">Export PDF</button>
     </div>
+    <div class="em-divider"></div>
+    <div class="em-history-title">Past Exports <span id="emHistCount"></span></div>
+    <div class="em-hist-scroll" id="emHistList"></div>
   </div>
 </div>
 
