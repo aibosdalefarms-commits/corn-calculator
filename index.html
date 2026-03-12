@@ -884,6 +884,7 @@ canvas#compChart{display:block;width:100%;height:100%}
 <div class="panel"><div class="panel-title">Farm Settings</div><div class="settings-row">
   <div class="setting-item"><label>Total Hay Acres</label><div class="setting-input"><input type="number" id="hay_acreageInput" value="100" min="1" max="100000" step="1" inputmode="numeric" oninput="hayUpdateAll()"><span class="unit">ac</span></div></div>
   <div class="setting-item"><label>Number of Cuts</label><div class="setting-input"><select id="hay_numCuts" onchange="hayNumCutsChanged()"><option value="1">1 cut</option><option value="2">2 cuts</option><option value="3" selected>3 cuts</option><option value="4">4 cuts</option><option value="5">5 cuts</option><option value="6">6 cuts</option><option value="7">7 cuts</option><option value="8">8 cuts</option><option value="9">9 cuts</option><option value="10">10 cuts</option></select></div></div>
+  <div class="setting-item"><label>Select Cut</label><div class="setting-input"><select id="hay_selectCut" onchange="haySelectCutChanged()"></select></div></div>
 </div></div>
 
 <div class="panel"><div class="panel-title">Annual Operating Costs ($/acre) — Applied Once</div>
@@ -1289,6 +1290,7 @@ var whtFarmOH   = WHT_OH.map(function(o){return o.val;});
 var hayFarmAnnual = HAY_ANNUAL.map(function(c){return c.val;});
 var hayFarmOH   = HAY_OH.map(function(o){return o.val;});
 var hayNumCuts = HAY_DEFAULT_NUM_CUTS;
+var haySelectedCut = 0; // index of currently selected cut to display
 // Per-cut state: arrays of {costs:[...percut costs...], yield: ton/ac, price: $/lb}
 var hayCuts = [];
 function hayInitCuts(){
@@ -2748,6 +2750,8 @@ function hayNumCutsChanged(){
   }
   while(hayCuts.length>newNum) hayCuts.pop();
   hayNumCuts=newNum;
+  if(haySelectedCut>=newNum) haySelectedCut=0;
+  buildHayCutSelector();
   buildHayCuts();buildHayCutBE();hayUpdateAll();
 }
 
@@ -2789,28 +2793,47 @@ function hayRenderAnnualDiff(i){
   var md=document.getElementById('hay_ann_md_'+i);if(md){md.className='diff-cell '+cls;md.innerHTML=html;}
 }
 
+// --- Build cut selector dropdown ---
+function buildHayCutSelector(){
+  var sel=document.getElementById('hay_selectCut');if(!sel)return;
+  var ordinals=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+  sel.innerHTML='';
+  for(var c=0;c<hayCuts.length;c++){
+    var opt=document.createElement('option');
+    opt.value=c;opt.textContent=ordinals[c]+' Cut';
+    if(c===haySelectedCut)opt.selected=true;
+    sel.appendChild(opt);
+  }
+}
+function haySelectCutChanged(){
+  var sel=document.getElementById('hay_selectCut');
+  haySelectedCut=parseInt(sel.value)||0;
+  buildHayCuts();
+  buildHayCutBE();
+  for(var i=0;i<HAY_PERCUT.length;i++) hayRenderPercutDiff(haySelectedCut,i);
+}
+
 // --- Build per-cut sections ---
 function buildHayCuts(){
   var container=document.getElementById('hay_cutsContainer');if(!container)return;container.innerHTML='';
   var ordinals=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
-  for(var c=0;c<hayCuts.length;c++){
-    var cut=hayCuts[c];
-    var panel=document.createElement('div');panel.className='panel';
-    var title=ordinals[c]+' Cut — Per-Cut Operating Costs ($/acre)';
-    var html='<div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'+
-      '<span>'+title+'</span>'+
-      '<div style="display:flex;gap:12px;align-items:center;font-size:13px;font-weight:400;">'+
-      '<label style="color:var(--text-dim)">Yield: <input type="number" id="hay_cut_yield_'+c+'" value="'+cut.yield.toFixed(1)+'" min="0" max="20" step="0.1" style="width:60px;padding:2px 4px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;" inputmode="decimal" oninput="hayUpCutYield('+c+',this.value)"> ton/ac</label>'+
-      '<label style="color:var(--text-dim)">Price: $<input type="number" id="hay_cut_price_'+c+'" value="'+cut.price.toFixed(2)+'" min="0" max="10" step="0.01" style="width:60px;padding:2px 4px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;" inputmode="decimal" oninput="hayUpCutPrice('+c+',this.value)">/lb</label>'+
-      '</div></div>';
-    html+='<table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="hay_cut_tbody_'+c+'"></tbody></table>';
-    html+='<div class="mobile-cards" id="hay_cut_mcards_'+c+'"></div>';
-    panel.innerHTML=html;
-    container.appendChild(panel);
-    // Populate table
-    buildHayCutTable(c);
-    buildHayCutCards(c);
-  }
+  var c=haySelectedCut;
+  if(c>=hayCuts.length) c=0;
+  var cut=hayCuts[c];
+  var panel=document.createElement('div');panel.className='panel';
+  var title=ordinals[c]+' Cut — Per-Cut Operating Costs ($/acre)';
+  var html='<div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'+
+    '<span>'+title+'</span>'+
+    '<div style="display:flex;gap:12px;align-items:center;font-size:13px;font-weight:400;">'+
+    '<label style="color:var(--text-dim)">Yield: <input type="number" id="hay_cut_yield_'+c+'" value="'+cut.yield.toFixed(1)+'" min="0" max="20" step="0.1" style="width:60px;padding:2px 4px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;" inputmode="decimal" oninput="hayUpCutYield('+c+',this.value)"> ton/ac</label>'+
+    '<label style="color:var(--text-dim)">Price: $<input type="number" id="hay_cut_price_'+c+'" value="'+cut.price.toFixed(2)+'" min="0" max="10" step="0.01" style="width:60px;padding:2px 4px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:3px;" inputmode="decimal" oninput="hayUpCutPrice('+c+',this.value)">/lb</label>'+
+    '</div></div>';
+  html+='<table class="comp-table"><thead><tr><th style="text-align:left;width:36%">Category</th><th class="col-omafa" style="width:18%">OMAFRA</th><th class="col-farm" style="width:24%">Your Farm</th><th style="width:22%">Difference</th></tr></thead><tbody id="hay_cut_tbody_'+c+'"></tbody></table>';
+  html+='<div class="mobile-cards" id="hay_cut_mcards_'+c+'"></div>';
+  panel.innerHTML=html;
+  container.appendChild(panel);
+  buildHayCutTable(c);
+  buildHayCutCards(c);
 }
 function buildHayCutTable(c){
   var tb=document.getElementById('hay_cut_tbody_'+c);if(!tb)return;tb.innerHTML='';
@@ -2839,8 +2862,8 @@ function hayUpPercut(c,i,v){
   if(d&&document.activeElement!==d)d.value=v;if(m&&document.activeElement!==m)m.value=v;
   hayRenderPercutDiff(c,i);hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();
 }
-function hayUpCutYield(c,v){hayCuts[c].yield=parseFloat(v)||0;hayUpdateBE();hayUpdateSens();saveUserData();}
-function hayUpCutPrice(c,v){hayCuts[c].price=parseFloat(v)||0;hayUpdateBE();hayUpdateSens();saveUserData();}
+function hayUpCutYield(c,v){hayCuts[c].yield=parseFloat(v)||0;buildHayCutBE();hayUpdateBE();hayUpdateSens();saveUserData();}
+function hayUpCutPrice(c,v){hayCuts[c].price=parseFloat(v)||0;buildHayCutBE();hayUpdateBE();hayUpdateSens();saveUserData();}
 function hayRenderPercutDiff(c,i){
   var diff=hayCuts[c].costs[i]-HAY_PERCUT[i].val,cls,sign;
   if(Math.abs(diff)<0.005){cls='diff-zero';sign='&#8212;';}
@@ -2855,16 +2878,16 @@ function hayRenderPercutDiff(c,i){
 function buildHayCutBE(){
   var container=document.getElementById('hay_cutBreakevenContainer');if(!container)return;container.innerHTML='';
   var ordinals=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'];
+  var c=haySelectedCut;
+  if(c>=hayCuts.length) c=0;
   var html='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:12px;">';
-  for(var c=0;c<hayCuts.length;c++){
-    html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px;">';
-    html+='<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--text);">'+ordinals[c]+' Cut</div>';
-    html+='<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">';
-    html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Yield</span><span>'+hayCuts[c].yield.toFixed(1)+' ton/ac</span></div>';
-    html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Price</span><span>$'+hayCuts[c].price.toFixed(2)+'/lb</span></div>';
-    html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Revenue</span><span>$'+f2(hayCuts[c].yield*2000*hayCuts[c].price)+'/ac</span></div>';
-    html+='</div></div>';
-  }
+  html+='<div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px;">';
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:6px;color:var(--text);">'+ordinals[c]+' Cut</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:4px;font-size:12px;">';
+  html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Yield</span><span>'+hayCuts[c].yield.toFixed(1)+' ton/ac</span></div>';
+  html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Price</span><span>$'+hayCuts[c].price.toFixed(2)+'/lb</span></div>';
+  html+='<div style="display:flex;justify-content:space-between;"><span style="color:var(--text-dim)">Revenue</span><span>$'+f2(hayCuts[c].yield*2000*hayCuts[c].price)+'/ac</span></div>';
+  html+='</div></div>';
   html+='</div>';
   container.innerHTML=html;
 }
@@ -2895,6 +2918,7 @@ function hayResetFarm(){
   }
   for(var i=0;i<HAY_OH.length;i++){hayFarmOH[i]=HAY_OH[i].val;var e=document.getElementById('hay_oh_'+i);if(e)e.value=f2(hayFarmOH[i]);}
   buildHayCuts();buildHayCutBE();
+  for(var i=0;i<HAY_PERCUT.length;i++)hayRenderPercutDiff(haySelectedCut,i);
   hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdateSens();saveUserData();
 }
 
@@ -3062,9 +3086,9 @@ function hayUpdateAll(){hayUpdateTotals();hayDrawChart();hayUpdateBE();hayUpdate
 var hayInitDone=false;
 function initHay(){
   if(hayInitDone)return;hayInitDone=true;
-  buildHayAnnualTable();buildHayAnnualCards();buildHayCuts();buildHayOH();buildHayCutBE();
+  buildHayAnnualTable();buildHayAnnualCards();buildHayCutSelector();buildHayCuts();buildHayOH();buildHayCutBE();
   for(var i=0;i<HAY_ANNUAL.length;i++)hayRenderAnnualDiff(i);
-  for(var c=0;c<hayCuts.length;c++){for(var i=0;i<HAY_PERCUT.length;i++)hayRenderPercutDiff(c,i);}
+  for(var i=0;i<HAY_PERCUT.length;i++)hayRenderPercutDiff(haySelectedCut,i);
   hayUpdateAll();
   fetchHayPrice();
 }
@@ -3897,7 +3921,7 @@ function applySingleFieldData(fieldId, crop) {
       }
       while (hayCuts.length < hayNumCuts) hayCuts.push({costs:HAY_PERCUT.map(function(p){return p.val;}), yield:HAY_DEFAULT_CUT_YIELD, price:HAY_DEFAULT_CUT_PRICE});
     }
-    if (hayInitDone) { buildHayAnnualTable(); buildHayAnnualCards(); buildHayCuts(); buildHayOH(); buildHayCutBE(); for (var i = 0; i < HAY_ANNUAL.length; i++) hayRenderAnnualDiff(i); for (var c = 0; c < hayCuts.length; c++) { for (var pi = 0; pi < HAY_PERCUT.length; pi++) hayRenderPercutDiff(c, pi); } hayUpdateAll(); }
+    if (hayInitDone) { if(haySelectedCut>=hayCuts.length) haySelectedCut=0; buildHayAnnualTable(); buildHayAnnualCards(); buildHayCutSelector(); buildHayCuts(); buildHayOH(); buildHayCutBE(); for (var i = 0; i < HAY_ANNUAL.length; i++) hayRenderAnnualDiff(i); for (var pi = 0; pi < HAY_PERCUT.length; pi++) hayRenderPercutDiff(haySelectedCut, pi); hayUpdateAll(); }
   }
 }
 
@@ -4004,7 +4028,7 @@ function applyAveragedFieldData(fieldIds, crop) {
         price: Math.round(cutPrice / cutCount * 100) / 100
       });
     }
-    if (hayInitDone) { buildHayAnnualTable(); buildHayAnnualCards(); buildHayCuts(); buildHayOH(); buildHayCutBE(); for (var i = 0; i < HAY_ANNUAL.length; i++) hayRenderAnnualDiff(i); for (var c = 0; c < hayCuts.length; c++) { for (var pi = 0; pi < HAY_PERCUT.length; pi++) hayRenderPercutDiff(c, pi); } hayUpdateAll(); }
+    if (hayInitDone) { if(haySelectedCut>=hayCuts.length) haySelectedCut=0; buildHayAnnualTable(); buildHayAnnualCards(); buildHayCutSelector(); buildHayCuts(); buildHayOH(); buildHayCutBE(); for (var i = 0; i < HAY_ANNUAL.length; i++) hayRenderAnnualDiff(i); for (var pi = 0; pi < HAY_PERCUT.length; pi++) hayRenderPercutDiff(haySelectedCut, pi); hayUpdateAll(); }
   }
 }
 
