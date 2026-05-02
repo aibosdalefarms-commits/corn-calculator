@@ -1,9 +1,9 @@
 {
-  "price": "5.13",
-  "pricePerTonne": "201.90",
-  "month": "February",
+  "price": "4.03",
+  "pricePerTonne": "158.69",
+  "month": "March",
   "currency": "CAD",
   "source": "Grain Farmers of Ontario",
   "sourceUrl": "https://gfo.ca/marketing/average-commodity-prices/historical-corn-prices/",
-  "updatedAt": "2026-05-01T13:17:01.382Z"
+  "updatedAt": "2026-05-02T13:09:21.833Z"
 }
