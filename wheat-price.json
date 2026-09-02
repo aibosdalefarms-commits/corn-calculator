@@ -1,9 +1,9 @@
 {
-  "price": "8.12",
-  "pricePerTonne": "298.36",
-  "month": "June",
+  "price": "8.06",
+  "pricePerTonne": "296.00",
+  "month": "July 2026",
   "currency": "CAD",
   "source": "Grain Farmers of Ontario",
   "sourceUrl": "https://gfo.ca/marketing/average-commodity-prices/historical-wheat-prices/",
-  "updatedAt": "2026-09-01T16:05:58.094Z"
+  "updatedAt": "2026-09-02T15:59:26.891Z"
 }
